@@ -47,7 +47,7 @@ nodes:
   extraMounts:
   - hostPath: /var/run/docker.sock
     containerPath: /var/run/docker.sock
-- role: worker
+#- role: worker
 EOF
 kind create cluster --config kind-kube.yaml
 kubectl  wait --for=condition=Ready node --all --timeout 60s
