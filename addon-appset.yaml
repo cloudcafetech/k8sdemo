@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1 
+kind: ApplicationSet
+metadata:
+  name: addon
+  namespace: argocd
+spec:
+  generators:
+  - list: 
+      elements: 
+      - cluster: kind
+        url: https://172.30.1.2:19091
+      - cluster: local
+        url: https://kubernetes.default.svc
+  template: 
+    metadata:
+      name: '{{cluster}}-addon'
+    spec:
+      source:
+        repoURL: https://github.com/cloudcafetech/k8s-terraform
+        targetRevision: HEAD
+        path: addon
+      destination:
+        server: '{{url}}'
+        #namespace: <namespace>
+      project: default
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: false
+        syncOptions:
+          #- CreateNamespace=true
