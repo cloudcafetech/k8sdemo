@@ -55,6 +55,7 @@ kind create cluster --config kind-kube.yaml
 - Argo setup
 
 ```
+kubectl ctx kubernetes-admin@kubernetes
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/argo.yaml
 kubectl create ns argocd
 kubectl create -f argo.yaml -n argocd
