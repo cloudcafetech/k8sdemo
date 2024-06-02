@@ -1,4 +1,4 @@
-# k8sdemo
+# K8S Demo
 k8sdemo using killercoda
 
 ## Killercoda setup
@@ -59,6 +59,7 @@ kubectl create ns argocd
 kubectl create -f argo.yaml -n argocd
 argopass=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 echo y | argocd login 172.30.1.2:31080 --username admin --password $argopass
+argocd cluster add kubernetes-admin@kubernetes
 ```
 
 - MinIO
