@@ -50,6 +50,7 @@ nodes:
 - role: worker
 EOF
 kind create cluster --config kind-kube.yaml
+kubectl  wait --for=condition=Ready node --all --timeout 60s
 ```
 
 - Argo setup
