@@ -68,6 +68,8 @@ echo y | argocd cluster add kind-kind
 - MinIO
 
 ```
+kubectl ctx kubernetes-admin@kubernetes
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio.yaml
 kubectl create -f minio.yaml
+kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
 ```
