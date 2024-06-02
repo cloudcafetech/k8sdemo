@@ -34,10 +34,12 @@ spec:
     protocol: TCP
     port: 9090
     targetPort: 9090
+    nodePort: 31090    
   - name: minio-api
     protocol: TCP
     port: 9000
     targetPort: 9000
+    nodePort: 31000    
 ---
 apiVersion: apps/v1
 kind: StatefulSet
