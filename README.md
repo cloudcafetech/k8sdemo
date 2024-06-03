@@ -9,7 +9,7 @@ k8sdemo using killercoda
 
 ```
 curl -sSLo /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-curl -Lo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+curl -sLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
 chmod +x /usr/local/bin/argocd
 chmod +x /usr/local/bin/kind
 
@@ -49,7 +49,7 @@ nodes:
     containerPath: /var/run/docker.sock
 #- role: worker
 EOF
-kind create cluster --config kind-kube.yaml
+kind create cluster --name kind-kk --config kind-kube.yaml
 kubectl  wait --for=condition=Ready node --all --timeout 60s
 ```
 
