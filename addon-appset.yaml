@@ -16,7 +16,7 @@ spec:
       name: '{{cluster}}-addon'
     spec:
       source:
-        repoURL: https://github.com/cloudcafetech/k8s-terraform
+        repoURL: https://github.com/cloudcafetech/k8sdemo
         targetRevision: HEAD
         path: addon
       destination:
