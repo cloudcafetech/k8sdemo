@@ -44,6 +44,11 @@ nodes:
     hostPort: 8080
   - containerPort: 30443
     hostPort: 8443
+# below extra port for minio
+  - containerPort: 32090
+    hostPort: 32090
+  - containerPort: 32000
+    hostPort: 32000
   extraMounts:
   - hostPath: /var/run/docker.sock
     containerPath: /var/run/docker.sock
