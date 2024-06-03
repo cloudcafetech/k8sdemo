@@ -47,7 +47,14 @@ nodes:
   extraMounts:
   - hostPath: /var/run/docker.sock
     containerPath: /var/run/docker.sock
+# below extra mount (/opt) for local-path-provisioner
+  - hostPath: /opt
+    containerPath: /tmp/data
 #- role: worker
+# below extra mount (/opt) for local-path-provisioner
+  #extraMounts:
+  #- hostPath: /opt
+    #containerPath: /tmp/data
 EOF
 kind create cluster --name kk --config kind-kube.yaml
 kubectl  wait --for=condition=Ready node --all --timeout 60s
@@ -72,7 +79,7 @@ wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-appse
 
 ```
 kubectl ctx kubernetes-admin@kubernetes
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio/minio.yaml
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio/local/minio.yaml
 kubectl create -f minio.yaml
 kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
 ```
