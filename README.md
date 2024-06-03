@@ -49,7 +49,7 @@ nodes:
     containerPath: /var/run/docker.sock
 #- role: worker
 EOF
-kind create cluster --name kind-kk --config kind-kube.yaml
+kind create cluster --name kk --config kind-kube.yaml
 kubectl  wait --for=condition=Ready node --all --timeout 60s
 ```
 
@@ -63,7 +63,7 @@ kubectl create -f argo.yaml -n argocd
 kubectl wait po -l app.kubernetes.io/name=argocd-server --for=condition=Ready --timeout=5m -n argocd
 argopass=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 echo y | argocd login 172.30.1.2:31080 --username admin --password $argopass
-echo y | argocd cluster add kind-kind
+echo y | argocd cluster add kind-kk
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/addon-appset.yaml
 ```
 
