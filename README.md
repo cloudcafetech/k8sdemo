@@ -65,13 +65,14 @@ argopass=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=
 echo y | argocd login 172.30.1.2:31080 --username admin --password $argopass
 echo y | argocd cluster add kind-kk
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/addon-appset.yaml
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-appset.yaml
 ```
 
 - MinIO
 
 ```
 kubectl ctx kubernetes-admin@kubernetes
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio.yaml
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio/minio.yaml
 kubectl create -f minio.yaml
 kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
 ```
