@@ -1,4 +1,4 @@
-# Istio Ambient Mesh [(https://istio.io/latest/docs/ambient/getting-started/#addtoambient]) in K8s
+# Istio Ambient Mesh (https://istio.io/latest/docs/ambient/getting-started/#addtoambient) in K8s
 
 ## Setup Istio Ambient Mesh using istioctl tool
 
