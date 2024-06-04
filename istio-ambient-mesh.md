@@ -69,6 +69,7 @@ kubectl apply -f kiali.yaml
 kubectl apply -f prometheus.yaml
 kubectl patch svc kiali -n istio-system -p '{"spec": {"type": "NodePort"}}'
 kubectl patch svc prometheus -n istio-system -p '{"spec": {"type": "NodePort"}}'
+kubectl get po -n istio-system
 ```
 
 ### Deploy the sample application
@@ -77,6 +78,8 @@ kubectl patch svc prometheus -n istio-system -p '{"spec": {"type": "NodePort"}}'
 kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/sleep.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/notsleep.yaml
+sleep 10
+kubectl get po
 ```
 
 ### Deploy an ingress gateway
@@ -122,3 +125,5 @@ for run in {1..7}; do
  sleep 2
 done
 ```
+
+# [NEXT step](https://istio.io/latest/docs/ambient/getting-started/#secure)
