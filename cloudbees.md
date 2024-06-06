@@ -40,6 +40,8 @@ OperationsCenter:
     Requests:
       Cpu: .25
       Memory: 1G
+  CSRF:
+    ProxyCompatibility: true
 Persistence:
   StorageClass: local-path
 EOF
