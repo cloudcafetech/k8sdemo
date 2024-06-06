@@ -1,7 +1,7 @@
 
 ## Cloubees Setup
 
-- Ingress
+- Ingress (modify service with externalTrafficPolicy: Local)
 ```
 wget https://raw.githubusercontent.com/cloudcafetech/k8s-terraform/main/addon/nginx.yaml
 kubectl label node controlplane region=master
