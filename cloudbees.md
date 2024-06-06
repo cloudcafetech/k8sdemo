@@ -8,8 +8,9 @@ kubectl label node controlplane region=master
 kubectl create -f nginx.yaml
 ```
 - Values yaml
-CBHOST=f6f9cc9d-cebc-4a0b-b15d-d27696d7d529-10-244-8-53-30080.papa.r.killercoda.com
 
+```
+CBHOST=f6f9cc9d-cebc-4a0b-b15d-d27696d7d529-10-244-8-53-30080.papa.r.killercoda.com
 cat <<EOF > kind-kube.yaml
 Subdomain: false
 ingress-nginx:
@@ -42,7 +43,7 @@ OperationsCenter:
 Persistence:
   StorageClass: local-path
 EOF
-
+```
 - Deply
 
 ```
