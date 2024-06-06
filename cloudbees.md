@@ -11,7 +11,7 @@ kubectl create -f nginx.yaml
 
 ```
 CBHOST=f6f9cc9d-cebc-4a0b-b15d-d27696d7d529-10-244-8-53-30080.papa.r.killercoda.com
-cat <<EOF > kind-kube.yaml
+cat <<EOF > values.yaml
 Subdomain: false
 ingress-nginx:
   Enabled: false
