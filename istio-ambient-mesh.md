@@ -109,6 +109,7 @@ for run in {1..7}; do
  sleep 2
 done
 ```
+
 ## Adding application to the ambient mesh
 
 ```kubectl label namespace default istio.io/dataplane-mode=ambient```
@@ -126,4 +127,107 @@ for run in {1..7}; do
 done
 ```
 
-# [NEXT step](https://istio.io/latest/docs/ambient/getting-started/#secure)
+Try to view in Kiali
+
+## [Secure](https://istio.io/latest/docs/ambient/getting-started/#secure) application access using Layer 4 authorization policies but not at the Layer 7 level.
+
+- Layer 4 authorization policy
+
+```
+kubectl apply -f - <<EOF
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: productpage-viewer
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: productpage
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/default/sa/sleep
+        - cluster.local/$GATEWAY_SERVICE_ACCOUNT
+EOF
+```
+
+- Confirm the above authorization policy is working
+
+```
+for run in {1..7}; do
+ kubectl exec deploy/sleep -- curl -s "http://$GATEWAY_HOST/productpage" | grep -o "<title>.*</title>"
+ sleep 2
+ kubectl exec deploy/sleep -- curl -s http://productpage:9080/ | grep -o "<title>.*</title>"
+ sleep 2
+ kubectl exec deploy/notsleep -- curl -s http://productpage:9080/ | grep -o "<title>.*</title>"
+ sleep 2
+done
+```
+
+#### Note: Above command will give first two ```Simple Bookstore App``` and last one ```command terminated with exit code 56```
+
+## Secure application access using Layer 7 authorization policy
+
+- Deploy a waypoint proxy for default namespace
+
+```istioctl x waypoint apply --enroll-namespace --wait```
+
+- Verify the waypoint proxy & makesure gateway resource with Programmed status True
+
+``kubectl get gtw waypoint```
+
+- Update your AuthorizationPolicy to explicitly allow the sleep service to GET the productpage service, but perform no other operations:
+
+```
+kubectl apply -f - <<EOF
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: productpage-viewer
+  namespace: default
+spec:
+  targetRefs:
+  - kind: Service
+    group: ""
+    name: productpage
+  action: ALLOW
+  rules:
+  - from:
+    - source:
+        principals:
+        - cluster.local/ns/default/sa/sleep
+    to:
+    - operation:
+        methods: ["GET"]
+EOF
+```
+
+- Confirm the new waypoint proxy is enforcing the updated authorization policy
+
+```
+for run in {1..7}; do
+ kubectl exec deploy/sleep -- curl -s "http://productpage:9080/productpage" -X DELETE
+ sleep 2
+ kubectl exec deploy/notsleep -- curl -s http://productpage:9080/
+ sleep 2
+ kubectl exec deploy/sleep -- curl -s http://productpage:9080/ | grep -o "<title>.*</title>"
+ sleep 2
+done
+```
+
+#### Note: above command will give first two ```RBAC: access denied``` and last one ```Simple Bookstore App```
+
+## Control traffic
+
+- Configure traffic routing to send 90% of requests to reviews v1 and 10% to reviews v2:
+
+```kubectl apply -f samples/bookinfo/gateway-api/route-reviews-90-10.yaml```
+
+- Confirm that roughly 10% of the traffic from 100 requests goes to reviews-v2:
+
+```kubectl exec deploy/sleep -- sh -c "for i in \$(seq 1 100); do curl -s http://productpage:9080/productpage | grep reviews-v.-; done"```
+
+## [Uninstall](https://istio.io/latest/docs/ambient/getting-started/#uninstall)
