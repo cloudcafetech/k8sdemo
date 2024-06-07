@@ -57,6 +57,10 @@ helm install ztunnel istio/ztunnel -n istio-system --wait -f ztunnel/values.yaml
 helm install istio-ingress istio/gateway -n istio-system -f gateway/values.yaml
 
 helm ls -n istio-system
+kubectl wait po -l k8s-app=istio-cni-node --for=condition=Ready --timeout=2m -n istio-system
+kubectl wait po -l app=istiod --for=condition=Ready --timeout=2m -n istio-system
+kubectl wait po -l app=ztunnel --for=condition=Ready --timeout=2m -n istio-system
+kubectl wait po -l app=istio-ingress --for=condition=Ready --timeout=2m -n istio-system
 ```
 
 ### Deploy Prometheus & Kiali
@@ -69,6 +73,8 @@ kubectl apply -f kiali.yaml
 kubectl apply -f prometheus.yaml
 kubectl patch svc kiali -n istio-system -p '{"spec": {"type": "NodePort"}}'
 kubectl patch svc prometheus -n istio-system -p '{"spec": {"type": "NodePort"}}'
+kubectl wait po -l app=kiali --for=condition=Ready --timeout=2m -n istio-system
+kubectl wait po -l app.kubernetes.io/name=prometheus --for=condition=Ready --timeout=2m -n istio-system
 kubectl get po -n istio-system
 ```
 
@@ -78,7 +84,11 @@ kubectl get po -n istio-system
 kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/sleep.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/notsleep.yaml
-sleep 10
+kubectl wait po -l app=notsleep--for=condition=Ready --timeout=2m -n default     
+kubectl wait po -l app=notsleep --for=condition=Ready --timeout=2m -n default
+kubectl wait po -l app=sleep --for=condition=Ready --timeout=2m -n default
+kubectl wait po -l app=ratings --for=condition=Ready --timeout=2m -n default
+kubectl wait po -l app=reviews --for=condition=Ready --timeout=2m -n default
 kubectl get po
 ```
 
@@ -87,6 +97,7 @@ kubectl get po
 ```
 kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
 kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=ClusterIP --namespace=default
+kubectl wait po -l istio.io/gateway-name=bookinfo-gateway --for=condition=Ready --timeout=2m -n default
 ```
 
 ### Set the environment variables for the Kubernetes Gateway:
@@ -126,15 +137,16 @@ for run in {1..7}; do
  sleep 2
 done
 ```
+- Try to view in Kiali
 
-Try to view in Kiali
+``kubectl get svc -n istio-system | grep kiali```
 
-## [Secure](https://istio.io/latest/docs/ambient/getting-started/#secure) application access using Layer 4 authorization policies but not at the Layer 7 level.
+## [Secure](https://istio.io/latest/docs/ambient/getting-started/#secure) application access using Layer 4 authorization policies but NOT for Layer 7.
 
 - Layer 4 authorization policy
 
 ```
-kubectl apply -f - <<EOF
+cat <<EOF > istio-auth-policy-L4.yaml
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
@@ -152,6 +164,7 @@ spec:
         - cluster.local/ns/default/sa/sleep
         - cluster.local/$GATEWAY_SERVICE_ACCOUNT
 EOF
+kubectl create -f istio-auth-policy-L4.yaml
 ```
 
 - Confirm the above authorization policy is working
@@ -182,7 +195,8 @@ done
 - Update your AuthorizationPolicy to explicitly allow the sleep service to GET the productpage service, but perform no other operations:
 
 ```
-kubectl apply -f - <<EOF
+kubectl delete -f istio-auth-policy-L4.yaml
+cat <<EOF > istio-auth-policy-L7.yaml
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
@@ -203,6 +217,7 @@ spec:
     - operation:
         methods: ["GET"]
 EOF
+kubectl apply -f istio-auth-policy-L7.yaml
 ```
 
 - Confirm the new waypoint proxy is enforcing the updated authorization policy
@@ -228,6 +243,12 @@ done
 
 - Confirm that roughly 10% of the traffic from 100 requests goes to reviews-v2:
 
-```kubectl exec deploy/sleep -- sh -c "for i in \$(seq 1 100); do curl -s http://productpage:9080/productpage | grep reviews-v.-; done"```
+```
+kubectl exec deploy/sleep -- sh -c "for i in \$(seq 1 100); do curl -s http://productpage:9080/productpage | grep reviews-v.-; done"
+
+for run in {1..50}; do
+ kubectl exec deploy/sleep -- curl -s "http://productpage:9080/productpage" | grep reviews-v.-
+done
+```
 
 ## [Uninstall](https://istio.io/latest/docs/ambient/getting-started/#uninstall)
