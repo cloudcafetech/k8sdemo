@@ -110,7 +110,8 @@ kubectl get po
 
 ```
 kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/gateway-api/bookinfo-gateway.yaml
-kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=ClusterIP --namespace=default
+#kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=ClusterIP --namespace=default
+kubectl annotate gateway bookinfo-gateway networking.istio.io/service-type=NodePort --namespace=default
 kubectl wait po -l istio.io/gateway-name=bookinfo-gateway --for=condition=Ready --timeout=2m -n default
 ```
 
