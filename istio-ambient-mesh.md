@@ -99,7 +99,6 @@ kubectl get po -n istio-system
 kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/platform/kube/bookinfo.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/sleep.yaml
 kubectl apply -f `pwd`/istio-1.22.0/samples/sleep/notsleep.yaml
-kubectl wait po -l app=notsleep--for=condition=Ready --timeout=2m -n default     
 kubectl wait po -l app=notsleep --for=condition=Ready --timeout=2m -n default
 kubectl wait po -l app=sleep --for=condition=Ready --timeout=2m -n default
 kubectl wait po -l app=ratings --for=condition=Ready --timeout=2m -n default
