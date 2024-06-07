@@ -267,3 +267,5 @@ done
 ```
 
 ## [Uninstall](https://istio.io/latest/docs/ambient/getting-started/#uninstall)
+
+### [Ref:](https://istio.io/latest/blog/2022/get-started-ambient/)
