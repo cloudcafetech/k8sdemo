@@ -224,7 +224,7 @@ done
 
 - Configure traffic routing to send 90% of requests to reviews v1 and 10% to reviews v2:
 
-```kubectl apply -f samples/bookinfo/gateway-api/route-reviews-90-10.yaml```
+```kubectl apply -f `pwd`/istio-1.22.0/samples/bookinfo/gateway-api/route-reviews-90-10.yaml```
 
 - Confirm that roughly 10% of the traffic from 100 requests goes to reviews-v2:
 
