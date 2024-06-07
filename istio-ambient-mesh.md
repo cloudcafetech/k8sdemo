@@ -3,11 +3,14 @@
 In ambient mode, Istio implements its features using a per-node Layer 4 (L4) proxy, and optionally a per-namespace Layer 7 (L7) proxy. Since workload pods no longer require proxies running in sidecars in order to participate in the mesh, ambient mode is often informally referred to as “sidecar-less mesh”.
 
 Ambient mode splits Istio’s functionality into two distinct layers. 
-L4 - *ztunnel* secure overlay handles routing and zero trust security for traffic. 
+
+- L4 - ztunnel secure overlay handles routing and zero trust security for traffic.
+  
 <p align="center">
   <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/ztunnel.PNG">
 </p>
-L7 - *waypoint* for advanced traffic management and L7 networking features.
+
+- L7 - waypoint for advanced traffic management and L7 networking features.
 <p align="center">
   <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/waypoint.PNG">
 </p>
