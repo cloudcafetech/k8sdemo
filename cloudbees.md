@@ -1,16 +1,21 @@
 
 ## Cloubees Setup
 
-- Ingress (modify service with externalTrafficPolicy: Local)
+- Ingress
+  
 ```
 wget https://raw.githubusercontent.com/cloudcafetech/k8s-terraform/main/addon/nginx.yaml
 kubectl label node controlplane region=master
+sed -i '/ipFamilyPolicy/a externalTrafficPolicy: Local' nginx.yaml
+sed -i 's/externalTrafficPolicy/  externalTrafficPolicy/' nginx.yaml
 kubectl create -f nginx.yaml
+kubectl wait po -l app.kubernetes.io/component=controller --for=condition=Ready --timeout=5m -n ingress-nginx
 ```
+
 - Values yaml
 
 ```
-CBHOST=f6f9cc9d-cebc-4a0b-b15d-d27696d7d529-10-244-8-53-30080.papa.r.killercoda.com
+CBHOST=fcc4e4c6-c8ec-44b7-b036-7f41d2af37d0-10-244-7-247-30080.papa.r.killercoda.com
 cat <<EOF > values.yaml
 Subdomain: false
 ingress-nginx:
