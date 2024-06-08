@@ -243,6 +243,10 @@ EOF
 kubectl apply -f istio-auth-policy-L7.yaml
 ```
 
+<p align="center">
+  <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/wf.PNG">
+</p>
+
 - Confirm the new waypoint proxy is enforcing the updated authorization policy
 
 ```
