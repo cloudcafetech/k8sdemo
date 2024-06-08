@@ -2,7 +2,7 @@
 
 In ambient mode, Istio implements its features using a per-node Layer 4 (L4) proxy, and optionally a per-namespace Layer 7 (L7) proxy. Since workload pods no longer require proxies running in sidecars in order to participate in the mesh, ambient mode is often informally referred to as **sidecar-less mesh** 
 
-Ambient mesh has **Istio core, Istiod, ingress gateway, zero-trust tunnel agent (ztunnel) and CNI plugin**, below two component added from trom traditional tstio.
+Ambient mesh has **Istio core, Istiod, ingress gateway, zero-trust tunnel agent (ztunnel) and CNI plugin**, below two component added from traditional Istio.
 
 -  **ztunnel** (zero-trust tunnel) used for node proxy in ambient mesh & responsible for routing in L4.
 -  **CNI plugin** - responsible for detecting which application pods are part of the ambient mesh and configuring the traffic redirection between the ztunnels.
