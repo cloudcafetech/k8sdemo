@@ -1,16 +1,24 @@
 # Istio [Ambient Mesh](https://istio.io/latest/docs/ambient/getting-started/#addtoambient) in K8s
 
-In ambient mode, Istio implements its features using a per-node Layer 4 (L4) proxy, and optionally a per-namespace Layer 7 (L7) proxy. Since workload pods no longer require proxies running in sidecars in order to participate in the mesh, ambient mode is often informally referred to as “sidecar-less mesh”.
+In ambient mode, Istio implements its features using a per-node Layer 4 (L4) proxy, and optionally a per-namespace Layer 7 (L7) proxy. Since workload pods no longer require proxies running in sidecars in order to participate in the mesh, ambient mode is often informally referred to as **sidecar-less mesh** 
+
+Ambient mesh has **Istio core, Istiod, ingress gateway, zero-trust tunnel agent (ztunnel) and CNI plugin**, below two component added from trom traditional tstio.
+
+-  **ztunnel** (zero-trust tunnel) used for node proxy in ambient mesh & responsible for routing in L4.
+-  **CNI plugin** - responsible for detecting which application pods are part of the ambient mesh and configuring the traffic redirection between the ztunnels.
+
+The istio-cni and ztunnel components are deployed as Kubernetes DaemonSets which run on every node. Each Istio CNI pod checks all pods co-located on the same node to see if these pods are part of the ambient mesh. For those pods, the CNI plugin configures traffic redirection so that all incoming and outgoing traffic to the pods are redirected to the co-located ztunnel first. As new pods are deployed or removed on the node, CNI plugin continues to monitor and update the redirection logic accordingly.
 
 Ambient mode splits Istio’s functionality into two distinct layers. 
 
-- L4 - ztunnel secure overlay handles routing and zero trust security for traffic.
+- L4 - **ztunnel** secure overlay handles routing and zero trust security for traffic.
   
 <p align="center">
   <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/ztunnel.PNG">
 </p>
 
-- L7 - waypoint for advanced traffic management and L7 networking features.
+- L7 - **waypoint** for advanced traffic management and L7 networking features.
+  
 <p align="center">
   <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/waypoint.PNG">
 </p>
@@ -268,4 +276,4 @@ done
 
 ## [Uninstall](https://istio.io/latest/docs/ambient/getting-started/#uninstall)
 
-### [Ref:](https://istio.io/latest/blog/2022/get-started-ambient/)
+### [Ref:#1](https://istio.io/latest/blog/2022/get-started-ambient/)
