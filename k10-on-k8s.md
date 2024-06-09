@@ -88,8 +88,8 @@ metadata:
   namespace: kasten-io
 type: secrets.kanister.io/aws
 data:
-  aws_access_key_id: YWRtaW4K
-  aws_secret_access_key: YWRtaW4yNjc1Cg==
+  aws_access_key_id: YWRtaW4=
+  aws_secret_access_key: YWRtaW4yNjc1
 EOF
 kubectl create -f minio-cred.yaml
 ```
@@ -98,30 +98,28 @@ kubectl create -f minio-cred.yaml
 
 ```
 cat <<EOF > minio-profile.yaml
-kind: Profile
 apiVersion: config.kio.kasten.io/v1alpha1
+kind: Profile
 metadata:
-  name: minio-profile
+  name: minio-migration
   namespace: kasten-io
 spec:
   type: Location
   locationSpec:
-    type: ObjectStore
-    objectStore:
-      endpoint: http://minio-svc.minio-store.svc.cluster.local:9000
-      name: k8s-backup
-      objectStoreType: S3
-      #path: k10/7a1b7f0d-9ade-464a-97fc-0005249075b9/migration
-      pathType: Directory
-      skipSSLVerify: true
-      region: minio
     credential:
       secretType: AwsAccessKey
       secret:
         apiVersion: v1
-        kind: secret
+        kind: Secret
         name: k10-s3-secret
         namespace: kasten-io
+    type: ObjectStore
+    objectStore:
+      name: k8s-backup
+      objectStoreType: S3
+      region: minio
+      endpoint: http://minio-svc.minio-store.svc.cluster.local:9000
+      skipSSLVerify: true
 EOF
 kubectl create -f minio-profile.yaml
 ```
