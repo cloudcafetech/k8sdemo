@@ -155,11 +155,11 @@ spec:
         profile:
           name: minio-migration
           namespace: kasten-io
-  retention:
-    daily: 7
-    weekly: 4
-    monthly: 12
-    yearly: 7
+  #retention:
+    #daily: 7
+    #weekly: 4
+    #monthly: 12
+    #yearly: 7
   selector:
     matchExpressions:
       - key: k10.kasten.io/appNamespace
