@@ -80,6 +80,17 @@ echo $(kubectl get secret ${k10_token} -n kasten-io -ojsonpath="{.data.token}" |
 - MinIO Secret
 
 ```
+export AWS_ACCESS_KEY_ID=admin
+export AWS_SECRET_ACCESS_KEY=admin2675
+kubectl create secret generic k10-s3-secret --namespace kasten-io \
+  --type secrets.kanister.io/aws \
+  --from-literal=aws_access_key_id=$AWS_ACCESS_KEY_ID \
+  --from-literal=aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+```
+
+**OR**
+
+```
 cat <<EOF > minio-cred.yaml
 apiVersion: v1
 kind: Secret
