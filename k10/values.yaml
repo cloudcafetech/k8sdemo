@@ -1,0 +1,63 @@
+global:
+  persistence:
+    mountPath: "/mnt/k10state"
+    enabled: true
+    storageClass: "local-path"
+
+ingress:
+  create: true
+  class: "nginx"
+  urlPath: "/k10" 
+
+cluster:
+  domainName: ""
+
+multicluster:
+  enabled: true
+  primary:
+    create: false
+    name: ""
+    ingressURL: ""
+
+prometheus:
+  rbac:
+    create: false
+  server:
+    enabled: false
+
+clusterName: ''
+executorReplicas: 2
+logLevel: info
+
+auth:
+  tokenAuth:
+    enabled: true
+
+kanisterPodMetricSidecar:
+  enabled: false
+siem:
+  logging:
+    cluster:
+      enabled: false
+    cloud:
+      path: k10audit/
+      awsS3:
+        enabled: false
+
+gateway:
+  insecureDisableSSLVerify: false
+  exposeAdminPort: true
+  service:
+    externalPort: 80
+  resources:
+    requests:
+      memory: 300Mi
+      cpu: 200m
+    limits:
+      memory: 300Mi
+      cpu: 500m
+
+excludedApps: ["kube-system", "kube-ingress", "kube-node-lease", "kube-public", "kube-rook-ceph"]
+
+grafana:
+  enabled: false
