@@ -50,7 +50,8 @@ helm install k10 kasten/k10 \
 --set "prometheus.server.enabled=false" \
 --set "auth.tokenAuth.enabled=true" \
 --set "siem.logging.cluster.enabled=false" \
---set "grafana.enabled=false"
+--set "grafana.enabled=false" \
+--set "kastenDisasterRecovery.quickMode.enabled=true"
 
 kubectl wait po -l app.kubernetes.io/managed-by=Helm --for=condition=Ready --timeout=5m -n kasten-io
 kubectl get pods --namespace kasten-io
