@@ -182,26 +182,26 @@ metadata:
   name: k8-dr-k10-policy
   namespace: kasten-io
 spec:
-  frequency: "@hourly"
+  actions:
+  - action: backup
+    backupParameters:
+      filters: {}
+      profile:
+        name: minio-migration
+        namespace: kasten-io
+  frequency: '@hourly'
   retention:
-    hourly: 4
     daily: 1
-    weekly: 1
+    hourly: 4
     monthly: 1
+    weekly: 1
     yearly: 1
   selector:
     matchExpressions:
-      - key: k10.kasten.io/appNamespace
-        operator: In
-        values:
-          - kasten-io
-  actions:
-    - action: backup
-      backupParameters:
-        filters: {}
-        profile:
-          name: minio-migration
-          namespace: kasten-io
+    - key: k10.kasten.io/appNamespace
+      operator: In
+      values:
+      - kasten-io-cluster
 EOF
 kubectl create -f k8-dr-k10-policy.yaml
 ```
