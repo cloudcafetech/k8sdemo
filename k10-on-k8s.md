@@ -124,7 +124,7 @@ EOF
 kubectl create -f minio-profile.yaml
 ```
 
-- Policy 
+- Policy Backup 
 
 ```
 cat <<EOF > backup-policy.yaml
@@ -142,7 +142,7 @@ spec:
     - action: backup
       backupParameters:
         profile:
-          name: minio-profile
+          name: minio-migration
           namespace: kasten-io
   retention:
     daily: 7
@@ -159,3 +159,38 @@ spec:
 EOF
 kubectl create -f backup-policy.yaml
 ```
+
+- Policy Backup 
+
+```
+cat <<EOF > k8-dr-k10-policy.yaml
+apiVersion: config.kio.kasten.io/v1alpha1
+kind: Policy
+metadata:
+  name: k8-dr-k10-policy
+  namespace: kasten-io
+spec:
+  frequency: "@hourly"
+  retention:
+    hourly: 4
+    daily: 1
+    weekly: 1
+    monthly: 1
+    yearly: 1
+  selector:
+    matchExpressions:
+      - key: k10.kasten.io/appNamespace
+        operator: In
+        values:
+          - kasten-io
+  actions:
+    - action: backup
+      backupParameters:
+        filters: {}
+        profile:
+          name: minio-migration
+          namespace: kasten-io
+EOF
+kubectl create -f k8-dr-k10-policy.yaml
+```
+
