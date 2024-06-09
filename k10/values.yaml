@@ -61,3 +61,7 @@ excludedApps: ["kube-system", "kube-ingress", "kube-node-lease", "kube-public", 
 
 grafana:
   enabled: false
+
+kastenDisasterRecovery:
+  quickMode:
+    enabled: true
