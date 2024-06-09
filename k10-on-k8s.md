@@ -1,5 +1,9 @@
 ## Kasten K10 Backup & Restore on K8S
 
+<p align="center">
+  <img src="https://github.com/cloudcafetech/k8sdemo/blob/main/k10/k10-flow.PNG">
+</p>
+
 - Ingress Setup
 
 ```
