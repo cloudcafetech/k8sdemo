@@ -146,28 +146,25 @@ metadata:
   name: backup
   namespace: kasten-io
 spec:
-  comment: ""
-  frequency: "@onDemand"
-  #frequency: "@daily"
-  paused: false
   actions:
-    - action: backup
-      backupParameters:
-        profile:
-          name: minio-migration
-          namespace: kasten-io
-  #retention:
-    #daily: 7
-    #weekly: 4
-    #monthly: 12
-    #yearly: 7
+  - action: backup
+    backupParameters:
+      profile:
+        name: minio-migration
+        namespace: kasten-io
+  frequency: '@hourly'
+  retention:
+    daily: 1
+    hourly: 4
+    monthly: 1
+    weekly: 1
+    yearly: 1
   selector:
     matchExpressions:
-      - key: k10.kasten.io/appNamespace
-        operator: In
-        values:
-          - kasten-io-cluster
-  subFrequency: null
+    - key: k10.kasten.io/appNamespace
+      operator: In
+      values:
+      - kasten-io
 EOF
 kubectl create -f backup-policy.yaml
 ```
@@ -185,7 +182,6 @@ spec:
   actions:
   - action: backup
     backupParameters:
-      filters: {}
       profile:
         name: minio-migration
         namespace: kasten-io
