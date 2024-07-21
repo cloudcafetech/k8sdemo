@@ -1,0 +1,207 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: grafana
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: grafana
+rules:
+- apiGroups:
+  - extensions
+  resourceNames:
+  - loki-grafana
+  resources:
+  - podsecuritypolicies
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: grafana
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: grafana
+subjects:
+- kind: ServiceAccount
+  name: grafana
+  namespace: monitoring
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-ini
+  labels:
+    app: grafana
+data:
+  grafana.ini: |
+    [auth.ldap]
+    ;enabled = true
+    ;config_file = /etc/grafana/ldap.toml
+    ;allow_sign_up = true  
+    [analytics]
+    check_for_updates = true
+    [grafana_net]
+    url = https://grafana.net
+    [log]
+    mode = console
+    [paths]
+    data = /var/lib/grafana/data
+    logs = /var/log/grafana
+    plugins = /var/lib/grafana/plugins
+    [users]
+    default_theme = light    
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  labels:
+    app: grafana
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:  
+    - access: browser
+      editable: false
+      isDefault: false
+      name: Jaeger
+      type: jaeger
+      uid: jaeger
+      url: http://simplest-query.tracing:16686
+    - access: proxy
+      editable: false
+      isDefault: false
+      jsonData:
+          maxLines: 1000
+          derivedFields:
+            - datasourceUid: jaeger
+              matcherRegex: '"(?:traceID|trace_id|TraceId)": "(\w+)"'
+              name: TraceID
+              url: "$${__value.raw}"
+      name: Loki
+      type: loki
+      url: http://loki.logging:3100     
+    - access: proxy
+      isDefault: true
+      name: prometheus
+      type: prometheus
+      url: http://kubemon-prometheus:9090
+      version: 1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboardproviders
+  labels:
+    app: grafana
+data:
+  dashboardproviders.yaml: |
+    apiVersion: 1
+    providers:
+    - disableDeletion: false
+      editable: true
+      folder: ""
+      name: default
+      options:
+        path: /var/lib/grafana/dashboards
+      orgId: 1
+      type: file
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-secrect
+  labels:
+    app: grafana
+type: Opaque
+data:
+  # By default, admin is set to `admin2675`
+  admin-user: YWRtaW4=
+  admin-password: "YWRtaW4yNjc1"
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  annotations:
+    prometheus.io/scrape: 'true'
+    prometheus.io/port:   '3000'
+spec:
+  selector: 
+    app: grafana
+  type: NodePort  
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      name: grafana
+      labels:
+        app: grafana
+    spec:
+      serviceAccountName: grafana    
+      containers:
+      - name: grafana
+        image: docker.io/grafana/grafana:8.5.13
+        ports:
+        - name: grafana
+          containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_USER
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secrect
+              key: admin-user
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: grafana-secrect
+              key: admin-password
+        resources:
+        volumeMounts:
+          - name: datasources
+            mountPath: /etc/grafana/provisioning/datasources
+            readOnly: false
+          - name: config
+            mountPath: /etc/grafana/grafana.ini
+            subPath: grafana.ini
+          - name: dashboardproviders
+            mountPath: /etc/grafana/provisioning/dashboards/
+          - name: grafana-storage
+            mountPath: /var/lib/grafana
+          #- name: grafana-ldap
+          #  mountPath: /etc/grafana/ldap.toml
+          #  subPath: ldap.toml            
+      volumes:
+        - name: datasources
+          configMap:
+            defaultMode: 420
+            name: grafana-datasources
+        - name: config
+          configMap:
+            name: grafana-ini
+        - name: dashboardproviders
+          configMap:
+            name: grafana-dashboardproviders
+        - name: grafana-storage
+          emptyDir: {}
+        #- name: grafana-ldap
+        #  secret:
+        #    secretName: grafana-ldap-toml   
