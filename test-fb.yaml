@@ -51,6 +51,7 @@ data:
         labels                 job=fluentbit
         Host                   ${FLUENT_LOKI_HOST}
         Port                   ${FLUENT_LOKI_PORT}
+	LabelMapPath   	       /fluent-bit/etc/labelmap.json	
         auto_kubernetes_labels on 
 
     [OUTPUT]
@@ -67,7 +68,8 @@ data:
         net.keepalive 	       true
         net.keepalive_idle_timeout 5
         net.keepalive_max_recycle 12096
-        net.connect_timeout 30
+        net.connect_timeout    30
+	LabelMapPath   	       /fluent-bit/etc/labelmap.json	
 
   labelmap.json: |-
     {
