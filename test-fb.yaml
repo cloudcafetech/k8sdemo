@@ -20,6 +20,8 @@ rules:
   resources:
   - namespaces
   - pods
+  - nodes
+  - nodes/proxy
   verbs:
   - get
   - list
@@ -105,6 +107,8 @@ data:
         Match kube.*
         Kube_Tag_Prefix kube.
         Regex_Parser custom-tag
+        #Use_Kubelet true
+        #Kubelet_Port 10250
         Merge_Log On
         Keep_Log Off
         K8S-Logging.Parser On
@@ -166,20 +170,6 @@ data:
         Name custom-tag
         Format regex
         Regex ^(?<namespace_name>[^_]+)\.(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)\.(?<container_name>.+)\.(?<container_id>[a-z0-9]{64})
-
-    [PARSER]
-        Name        docker
-        Format      json
-        Time_Key    time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
-        Time_Keep   On
-
-    [PARSER]
-        Name cri
-        Format regex
-        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
-        Time_Key    time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
 
     [PARSER]
         Name        syslog
