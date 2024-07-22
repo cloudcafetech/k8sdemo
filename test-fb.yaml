@@ -1,262 +1,260 @@
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fluent-bit-config
-  namespace: logging
-  labels:
-    k8s-app: fluent-bit
-data:
-  # Configuration files: server, input, filters and output
-  # ======================================================
-  fluent-bit.conf: |
-    [SERVICE]
-        Flush         1
-        Log_Level     info
-        Daemon        off
-        Parsers_File  parsers.conf
-        HTTP_Server   On
-        HTTP_Listen   0.0.0.0
-        HTTP_Port     2020
-
-    [INPUT]
-        Name              tail
-        Tag               kube.*
-	Tag_Regex	  (?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<container_id>[a-z0-9]{64})\.log$  
-        # Excluding kube-system & kubelog namespaces pod logs
-        Exclude_Path      /var/log/containers/*logging*,/var/log/containers/*monitoring*
-        Path              /var/log/containers/*.log
-        #Parser            cri
-        #Parser            docker
-        multiline.parser  docker, cri
-        DB                /var/log/flb_kube.db
-        Mem_Buf_Limit     100MB
-        Skip_Long_Lines   On
-        Refresh_Interval  10    
-
-    [FILTER]
-        Name                kubernetes
-        Match               kube.*
-        Kube_URL            https://kubernetes.default.svc:443
-        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
-        Kube_Tag_Prefix     kube.var.log.containers.
-        Merge_Log           On
-        Merge_Log_Key       log_processed
-        K8S-Logging.Parser  On
-        K8S-Logging.Exclude On 
-
-    [OUTPUT]
-        name                   loki
-        match                  *
-        labels                 job=fluentbit
-        Host                   ${FLUENT_LOKI_HOST}
-        Port                   ${FLUENT_LOKI_PORT}
-	LabelMapPath   	       /fluent-bit/etc/labelmap.json	
-        auto_kubernetes_labels on 
-
-    [OUTPUT]
-        name                   splunk
-        # Sending only default namespaces pod logs
-        Match          	       kube.default.*
-        Host                   ${FLUENT_SPLUNK_HOST}
-        Port                   ${FLUENT_SPLUNK_PORT}
-	Splunk_Token	       ${FLUENT_SPLUNK_TOKEN}
-        TLS            	       On
-        TLS.Verify             Off
-        Retry_Limit 	       3
-        Splunk_Send_Raw        On
-        net.keepalive 	       true
-        net.keepalive_idle_timeout 5
-        net.keepalive_max_recycle 12096
-        net.connect_timeout    30
-	LabelMapPath   	       /fluent-bit/etc/labelmap.json	
-
-  labelmap.json: |-
-    {
-      "kubernetes": {
-        "container_name": "container",
-        "host": "node",
-        "labels": {
-          "app": "app",
-          "release": "release"
-        },
-        "namespace_name": "namespace",
-        "pod_name": "instance"
-      },
-      "stream": "stream"
-    }
-
-  parsers.conf: |
-    [PARSER]
-        Name   apache
-        Format regex
-        Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-        Time_Key time
-        Time_Format %d/%b/%Y:%H:%M:%S %z
-
-    [PARSER]
-        Name   apache2
-        Format regex
-        Regex  ^(?<host>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^ ]*) +\S*)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-        Time_Key time
-        Time_Format %d/%b/%Y:%H:%M:%S %z
-
-    [PARSER]
-        Name   apache_error
-        Format regex
-        Regex  ^\[[^ ]* (?<time>[^\]]*)\] \[(?<level>[^\]]*)\](?: \[pid (?<pid>[^\]]*)\])?( \[client (?<client>[^\]]*)\])? (?<message>.*)$
-
-    [PARSER]
-        Name   nginx
-        Format regex
-        Regex ^(?<remote>[^ ]*) (?<host>[^ ]*) (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<method>\S+)(?: +(?<path>[^\"]*?)(?: +\S*)?)?" (?<code>[^ ]*) (?<size>[^ ]*)(?: "(?<referer>[^\"]*)" "(?<agent>[^\"]*)")?$
-        Time_Key time
-        Time_Format %d/%b/%Y:%H:%M:%S %z
-
-    [PARSER]
-        Name   json
-        Format json
-        Time_Key time
-        Time_Format %d/%b/%Y:%H:%M:%S %z
-
-    [PARSER]
-        Name        docker
-        Format      json
-        Time_Key    time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
-        Time_Keep   On
-
-    [PARSER]
-        # http://rubular.com/r/tjUt3Awgg4
-        Name cri
-        Format regex
-        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
-        Time_Key    time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
-
-    [PARSER]
-        Name        syslog
-        Format      regex
-        Regex       ^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
-        Time_Key    time
-        Time_Format %b %d %H:%M:%S    
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
   name: fluent-bit
   namespace: logging
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: fluent-bit-read
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
+  name: fluent-bit
 rules:
-- apiGroups: [""]
+- apiGroups:
+  - ""
   resources:
   - namespaces
   - pods
-  verbs: ["get", "list", "watch"]
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: fluent-bit-read
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
+  name: fluent-bit
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: fluent-bit-read
+  name: fluent-bit
 subjects:
 - kind: ServiceAccount
   name: fluent-bit
   namespace: logging
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
+  name: fluent-bit
+  namespace: logging
+data:
+  custom_parsers.conf: |
+    [PARSER]
+        Name docker_no_time
+        Format json
+        Time_Keep Off
+        Time_Key time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+
+    [PARSER]
+        Name custom-tag
+        Format regex
+        Regex ^(?<namespace_name>[^_]+)\.(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)\.(?<container_name>.+)\.(?<container_id>[a-z0-9]{64})
+
+  fluent-bit.conf: |
+    [SERVICE]
+        Daemon Off
+        Flush 1
+        Log_Level info
+        Parsers_File /fluent-bit/etc/parsers.conf
+        Parsers_File /fluent-bit/etc/conf/custom_parsers.conf
+        HTTP_Server On
+        HTTP_Listen 0.0.0.0
+        HTTP_Port 2020
+        Health_Check On
+
+    [INPUT]
+        Name tail
+        #Tag kube.*
+        Tag kube.<namespace_name>.<pod_name>.<container_name>.<container_id>
+        # Excluding logging & monitoring namespaces pod logs
+        Exclude_Path /var/log/containers/*logging*,/var/log/containers/*monitoring*
+        Path /var/log/containers/*.log
+        Tag_Regex (?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<container_id>[a-z0-9]{64})\.log$
+        multiline.parser docker, cri
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Kube_Tag_Prefix kube.
+        Regex_Parser custom-tag
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+        K8S-Logging.Exclude On
+
+    [Output]
+        Name grafana-loki
+        Match kube.*
+        Url ${FLUENT_LOKI_URL}
+        Labels {job="fluent-bit"}
+        LabelKeys level,app 
+        BatchWait 1
+        BatchSize 1001024
+        LineFormat json
+        LogLevel info
+        AutoKubernetesLabels true
+
+    [Output]
+        Name splunk
+        Alias ns_default_log
+        # Sending default namespaces pod logs
+        Match kube.default.*
+        Host ${FLUENT_SPLUNK_HOST}
+        Port ${FLUENT_SPLUNK_PORT}
+        Splunk_Token ${FLUENT_SPLUNK_TOKEN}
+        TLS On
+        TLS.Verify Off
+
+    [Output]
+        Name splunk
+        Alias ns_default_log
+        # Sending minio-store namespaces pod logs
+        Match kube.minio-store.*
+        Host ${FLUENT_SPLUNK_HOST}
+        Port ${FLUENT_SPLUNK_PORT}
+        Splunk_Token ${FLUENT_SPLUNK_TOKEN}
+        TLS On
+        TLS.Verify Off
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
+  name: fluent-bit
+  namespace: logging
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 2020
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
+  sessionAffinity: None
+  type: ClusterIP
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
+  labels:
+    app.kubernetes.io/instance: fluent-bit
+    app.kubernetes.io/name: fluent-bit
   name: fluent-bit
   namespace: logging
-  labels:
-    app: fluentbit
-    component: fluentbit
-    tier: logging
-    k8s-app: fluent-bit-logging
-    version: v1
-    kubernetes.io/cluster-service: "true"
 spec:
   selector:
     matchLabels:
-      k8s-app: fluent-bit-logging
-      app: fluentbit
-      component: fluentbit
-      tier: logging
+      app.kubernetes.io/instance: fluent-bit
+      app.kubernetes.io/name: fluent-bit
   template:
     metadata:
       labels:
-        k8s-app: fluent-bit-logging
-        app: fluentbit
-        component: fluentbit
-        tier: logging
-        version: v1
-        kubernetes.io/cluster-service: "true"
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "2020"
-        prometheus.io/path: /api/v1/metrics/prometheus
+        app.kubernetes.io/instance: fluent-bit
+        app.kubernetes.io/name: fluent-bit
     spec:
-      terminationGracePeriodSeconds: 10
-      serviceAccountName: fluent-bit
-      tolerations:
-        - key: node-role.kubernetes.io/master
-          operator: Exists
-          effect: NoSchedule
-        - operator: "Exists"
-          effect: "NoExecute"
-        - operator: "Exists"
-          effect: "NoSchedule"
       containers:
-        - name: fluent-bit
-          # 1.9.2 as of 2022/04/11
-          image: fluent/fluent-bit@sha256:90a2394abc14c9709146e7d9a81edcc165ff26b8144024eeb1f359662c648dbf
-          imagePullPolicy: Always
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-          ports:
-            - containerPort: 2020
-          env:
-          # Loki
-          - name: FLUENT_LOKI_HOST
-            value: "loki"
-          - name: FLUENT_LOKI_PORT
-            value: "3100"
-          - name: FLUENT_LOKI_AUTO_KUBERNETES_LABELS
-            value: "true"
-          - name: FLUENT_SPLUNK_HOST
-            value: "172.30.1.2"
-          - name: FLUENT_SPLUNK_PORT
-            value: "8088"
-          - name: FLUENT_SPLUNK_TOKEN
-            value: "abcd1234"
-          volumeMounts:
-          - name: varlog
-            mountPath: /var/log
-          - name: varlibdockercontainers
-            mountPath: /var/lib/docker/containers
-            readOnly: true
-          - name: fluent-bit-config
-            mountPath: /fluent-bit/etc/
+      - image: grafana/fluent-bit-plugin-loki:main-e2ed1c0
+        imagePullPolicy: IfNotPresent
+        args:
+        - -e
+        - /fluent-bit/bin/out_grafana_loki.so
+        - --workdir=/fluent-bit/etc
+        - --config=/fluent-bit/etc/conf/fluent-bit.conf
+        command:
+        - /fluent-bit/bin/fluent-bit
+        env:
+        - name: FLUENT_LOKI_URL
+          value: http://loki.logging:3100/loki/api/v1/push
+        - name: FLUENT_SPLUNK_HOST
+          value: "172.30.1.2"
+        - name: FLUENT_SPLUNK_PORT
+          value: "8088"
+        - name: FLUENT_SPLUNK_TOKEN
+          value: "abcd1234"
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: fluent-bit
+        ports:
+        - containerPort: 2020
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /api/v1/health
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /fluent-bit/etc/conf
+          name: config
+        - mountPath: /var/log
+          name: varlog
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+        - mountPath: /etc/machine-id
+          name: etcmachineid
+          readOnly: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      serviceAccount: fluent-bit
+      serviceAccountName: fluent-bit
+      terminationGracePeriodSeconds: 30
       volumes:
-        - name: varlog
-          hostPath:
-            path: /var/log
-        - name: varlibdockercontainers
-          hostPath:
-            path: /var/lib/docker/containers
-        - name: fluent-bit-config
-          configMap:
-            name: fluent-bit-config
+      - configMap:
+          defaultMode: 420
+          name: fluent-bit
+        name: config
+      - hostPath:
+          path: /var/log
+          type: ""
+        name: varlog
+      - hostPath:
+          path: /var/lib/docker/containers
+          type: ""
+        name: varlibdockercontainers
+      - hostPath:
+          path: /etc/machine-id
+          type: File
+        name: etcmachineid
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
