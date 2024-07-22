@@ -50,19 +50,6 @@ metadata:
   name: fluent-bit
   namespace: logging
 data:
-  custom_parsers.conf: |
-    [PARSER]
-        Name docker_no_time
-        Format json
-        Time_Keep Off
-        Time_Key time
-        Time_Format %Y-%m-%dT%H:%M:%S.%L
-
-    [PARSER]
-        Name custom-tag
-        Format regex
-        Regex ^(?<namespace_name>[^_]+)\.(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)\.(?<container_name>.+)\.(?<container_id>[a-z0-9]{64})
-
   fluent-bit.conf: |
     [SERVICE]
         Daemon Off
@@ -77,7 +64,6 @@ data:
 
     [INPUT]
         Name tail
-        #Tag kube.*
         Tag kube.<namespace_name>.<pod_name>.<container_name>.<container_id>
         # Excluding logging & monitoring namespaces pod logs
         Exclude_Path /var/log/containers/*logging*,/var/log/containers/*monitoring*
@@ -86,6 +72,33 @@ data:
         multiline.parser docker, cri
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
+
+    [INPUT]
+        Name                tail
+        Tag                 host.dmesg
+        Path                /var/log/dmesg
+        Key                 message
+        Mem_Buf_Limit       5MB
+        Skip_Long_Lines     On
+        Refresh_Interval    10
+
+    [INPUT]
+        Name                tail
+        Tag                 host.messages
+        Path                /var/log/messages
+        Parser              syslog
+        Mem_Buf_Limit       5MB
+        Skip_Long_Lines     On
+        Refresh_Interval    10
+
+    [INPUT]
+        Name                tail
+        Tag                 host.secure
+        Path                /var/log/secure
+        Parser              syslog
+        Mem_Buf_Limit       5MB
+        Skip_Long_Lines     On
+        Refresh_Interval    10
 
     [FILTER]
         Name kubernetes
@@ -122,7 +135,7 @@ data:
 
     [Output]
         Name splunk
-        Alias ns_default_log
+        Alias ns_minio-store_log
         # Sending minio-store namespaces pod logs
         Match kube.minio-store.*
         Host ${FLUENT_SPLUNK_HOST}
@@ -130,6 +143,50 @@ data:
         Splunk_Token ${FLUENT_SPLUNK_TOKEN}
         TLS On
         TLS.Verify Off
+
+    [Output]
+        Name splunk
+        Alias host_log
+        Match host.*
+        Host ${FLUENT_SPLUNK_HOST}
+        Port ${FLUENT_SPLUNK_PORT}
+        Splunk_Token ${FLUENT_SPLUNK_TOKEN}
+        TLS On
+        TLS.Verify Off
+
+  custom_parsers.conf: |
+    [PARSER]
+        Name docker_no_time
+        Format json
+        Time_Keep Off
+        Time_Key time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+
+    [PARSER]
+        Name custom-tag
+        Format regex
+        Regex ^(?<namespace_name>[^_]+)\.(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)\.(?<container_name>.+)\.(?<container_id>[a-z0-9]{64})
+
+    [PARSER]
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep   On
+
+    [PARSER]
+        Name cri
+        Format regex
+        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name        syslog
+        Format      regex
+        Regex       ^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
+        Time_Key    time
+        Time_Format %b %d %H:%M:%S
 ---
 apiVersion: v1
 kind: Service
@@ -230,12 +287,16 @@ spec:
         - mountPath: /etc/machine-id
           name: etcmachineid
           readOnly: true
-      dnsPolicy: ClusterFirst
+        - mountPath: /var/log/dmesg
+          name: dmesg
+          readOnly: true
       restartPolicy: Always
       schedulerName: default-scheduler
       serviceAccount: fluent-bit
       serviceAccountName: fluent-bit
       terminationGracePeriodSeconds: 30
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       volumes:
       - configMap:
           defaultMode: 420
@@ -253,6 +314,9 @@ spec:
           path: /etc/machine-id
           type: File
         name: etcmachineid
+      - hostPath:
+          path: /var/log/dmesg
+        name: dmesg    
   updateStrategy:
     rollingUpdate:
       maxSurge: 0
