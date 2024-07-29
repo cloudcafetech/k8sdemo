@@ -194,7 +194,9 @@ DBPASS=$(kubectl get secrets pgatlaciandb-pguser-postgres -o go-template='{{.dat
 kubectl create secret generic confluence-db --from-literal=username='postgres' --from-literal=password="$DBPASS" -n confluence
 helm repo add atlassian-data-center https://atlassian.github.io/data-center-helm-charts
 helm repo update
-helm install confluence atlassian-data-center/confluence --namespace confluence --values values.yaml
+
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/values-confluence.yaml
+helm install confluence atlassian-data-center/confluence --namespace confluence --values values-confluence.yaml
 
 cat <<EOF > pvc.yaml
 apiVersion: v1
