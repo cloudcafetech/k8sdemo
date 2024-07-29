@@ -10,7 +10,7 @@ kubectl create ns confluence
 kubectl create ns postgres-operator
 ```
 
-- MinIO Nginx setup with selfsigned certificate as Docker
+- MinIO & Nginx setup with selfsigned in Docker
   
 ```
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-nginx-selfsigned.sh
@@ -21,7 +21,7 @@ cp public.crt repo2-ca.crt
 
 ### OR
 
-- MinIO Nginx setup with selfsigned certificate in K8S
+- MinIO with selfsigned in K8S
   
 ```
 cat <<EOF > openssl.conf
