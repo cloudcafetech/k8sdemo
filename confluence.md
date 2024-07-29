@@ -228,12 +228,15 @@ kubectl create -f pvc.yaml
 
 ```kubectl annotate -n confluence postgrescluster pgatlaciandb --overwrite postgres-operator.crunchydata.com/pgbackrest-restore="$(date)"```
 
+- Manual DB Switchover
+
+```kubectl annotate -n confluence postgrescluster pgatlaciandb --overwrite postgres-operator.crunchydata.com/trigger-switchover="$(date)"```
 
 
-https://docs.aidbox.app/storage-1/backup-and-restore/crunchy-operator-pgbackrest#recovery
+[ReF:Setup]((https://docs.aidbox.app/storage-1/ha-aidboxdb#crunchy-operator)
 
+[ReF:Backup](https://docs.aidbox.app/storage-1/backup-and-restore/crunchy-operator-pgbackrest#create-backup)
 
-```kubectl annotate -n aidboxdb-db  postgrescluster aidboxdb --overwrite \
-        postgres-operator.crunchydata.com/pgbackrest-restore="$(date)"
+[ReF:Restore](https://docs.aidbox.app/storage-1/backup-and-restore/crunchy-operator-pgbackrest#recovery)
 
-
+[ReF:Inspect](https://docs.aidbox.app/storage-1/backup-and-restore/crunchy-operator-pgbackrest#inspect-backup)
