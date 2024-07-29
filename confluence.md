@@ -1,7 +1,16 @@
 
 ## Confluence Setup
 
-- MinIO Nginx setup with selfsigned certificate
+- Create NS
+
+```
+kubectl create ns minio-store
+kubectl create ns cert-manager
+kubectl create ns confluence
+kubectl create ns postgres-operator
+```
+
+- MinIO Nginx setup with selfsigned certificate as Docker
   
 ```
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-nginx-selfsigned.sh
@@ -10,12 +19,41 @@ chmod 755 minio-nginx-selfsigned.sh
 cp public.crt repo2-ca.crt
 ```
 
-- Create NS
+### OR
 
+- MinIO Nginx setup with selfsigned certificate in K8S
+  
 ```
-kubectl create ns cert-manager
-kubectl create ns confluence
-kubectl create ns postgres-operator
+cat <<EOF > openssl.conf
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = IN
+ST = WB
+L = Kolkata
+O = Cafe
+OU = Cloud
+CN = controlplane
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = minio-svc.minio-store.svc.cluster.local
+EOF
+openssl req -new -x509 -nodes -days 730 -keyout private.key -out public.crt -config openssl.conf
+
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-selfsign.yaml
+kubectl create secret generic minio-server-secret --from-file=./public.crt --from-file=./private.key -n minio-store
+kubectl create -f minio-selfsign.yaml
+kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
+
+kubectl exec -it minio-0 -n minio-store -- mc config host add minio https://localhost:9000 admin admin2675 --insecure
+kubectl exec -it minio-0 -n minio-store -- mc mb minio/pgbkp --insecure
+kubectl exec -it minio-0 -n minio-store -- ls -l /data
 ```
 
 - Install Crunchy Postgress Operator
@@ -128,6 +166,7 @@ spec:
           s3:
             bucket: "pgbkp"
             endpoint: "minio-api.172.30.1.2.nip.io"
+            #endpoint: "minio-svc.minio-store.svc.cluster.local"
             region: "minio"
 
   databaseInitSQL:
