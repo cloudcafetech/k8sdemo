@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: minio-store
+  labels:
+    name: minio-store
+spec:
+  clusterIP: None  
+  ports:
+  - port: 9000
+    name: minio
+  selector:
+    name: minio-store
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-svc
+  namespace: minio-store
+spec:
+  type: NodePort
+  selector:
+    name: minio-store
+  ports:
+  - name: minio-console
+    protocol: TCP
+    port: 9090
+    targetPort: 9090
+    nodePort: 31090    
+  - name: minio-api
+    protocol: TCP
+    port: 9000
+    targetPort: 9000
+    nodePort: 31000    
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: minio-store
+  labels:
+    name: minio-store
+spec:
+  serviceName: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      name: minio-store
+  template:
+    metadata:
+      labels:
+        name: minio-store
+    spec:
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:latest
+        command:
+        - /bin/bash
+        - -c
+        args: 
+        - minio server /data --console-address :9090
+        env:
+        - name: MINIO_ROOT_USER
+          value: "admin"
+        - name: MINIO_ROOT_PASSWORD
+          value: "admin2675"
+        ports:
+        - containerPort: 9000
+          hostPort: 9000
+        - containerPort: 9090
+          hostPort: 9090          
+        volumeMounts:
+        - mountPath: /data/
+          name: data
+        - mountPath: /root/.minio/certs
+          name: minio-certs
+      volumes:
+      - name: minio-certs 
+        secret:
+          secretName: minio-server-secret
+          items:
+          - key: public.crt
+            path: public.crt
+          - key: private.key
+            path: private.key
+          - key: public.crt
+            path: CAs/public.crt 
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 5Gi
