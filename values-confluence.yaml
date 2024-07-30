@@ -28,8 +28,6 @@ serviceAccount:
   clusterRoleBinding:
     create: false
     name:
-  eksIrsa:
-    roleArn:
 
 database:
 
@@ -134,12 +132,8 @@ ingress:
 # Confluence configuration
 confluence:
 
-  # -- Whether the main container should acquire helm release name. By default the container name is `confluence` which corresponds to the name of the Helm Chart.
-  #
   useHelmReleaseNameAsContainerName: false
 
-  # K8s Confluence Service configuration
-  #
   service:
     port: 80
     type: ClusterIP
@@ -320,49 +314,22 @@ monitoring:
   jmxExporterImageRepo: bitnami/jmx-exporter
   jmxExporterImageTag: 0.18.0
   jmxExporterPort: 9999
-
-  # -- JMX exporter port type
-  #
   jmxExporterPortType: ClusterIP
-
-  # -- Location of jmx_exporter jar file if mounted from a secret or manually copied to shared home
-  #
   jmxExporterCustomJarLocation:
-
-  # -- Custom JMX config with the rules
-  #
   jmxExporterCustomConfig: {}
   #  rules:
   #   - pattern: ".*"
 
   serviceMonitor:
-
-    # -- Create ServiceMonitor to start scraping metrics. ServiceMonitor CRD needs to be created in advance.
-    #
     create: false
-
-    # -- ServiceMonitorSelector of the prometheus instance.
-    #
     prometheusLabelSelector: {}
       # release: prometheus
 
-    # -- Scrape interval for the JMX service.
-    #
     scrapeIntervalSeconds: 30
 
   grafana:
-
-    # -- Create ConfigMaps with Grafana dashboards
-    #
     createDashboards: false
-
-    # -- Label selector for Grafana dashboard importer sidecar
-    #
     dashboardLabels: {}
-      # grafana_dashboard: dc_monitoring
-
-    # -- Annotations added to Grafana dashboards ConfigMaps. See: https://github.com/kiwigrid/k8s-sidecar#usage
-    #
     dashboardAnnotations: {}
       # k8s-sidecar-target-directory: /tmp/dashboards/example-folder
 
@@ -370,38 +337,15 @@ monitoring:
 # https://confluence.atlassian.com/doc/configuring-synchrony-858772125.html
 synchrony:
 
-  # -- Set to 'true' if Synchrony (i.e. collaborative editing) should be enabled.
-  # This will result in a separate StatefulSet and Service to be created for Synchrony.
-  # If disabled, then collaborative editing will be disabled in Confluence.
   enabled: true
 
-  # -- Number of Synchrony pods
-  #
   replicaCount: 1
 
-  # -- Custom annotations that will be applied to all Synchrony pods.
-  # When undefined, default to '.Values.podAnnotations' which are Confluence pod annotations (if defined)
   podAnnotations: {}
-  #  name: <value>
-
-  # K8s Synchrony Service configuration
-  #
   service:
-
-    # -- The port on which the Synchrony K8s Service will listen
-    #
     port: 80
-
-    # -- The type of K8s service to use for Synchrony
-    #
     type: ClusterIP
-
-    # -- Use specific loadBalancerIP. Only applies to service type LoadBalancer.
-    #
     loadBalancerIP:
-
-    # -- Annotations to apply to Synchrony Service
-    #
     annotations: {}
 
   securityContextEnabled: true
@@ -414,18 +358,8 @@ synchrony:
   # Port definitions
   #
   ports:
-
-    # -- The port on which the Synchrony container listens for HTTP traffic
-    #
     http: 8091
-
-    # -- The port on which the Synchrony container listens for Hazelcast traffic
-    #
     hazelcast: 5701
-
-  # Confirm that Synchrony is up and running with a ReadinessProbe
-  # https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#define-readiness-probes
-  #
   readinessProbe:
     healthcheckPath: "/synchrony/heartbeat"
     initialDelaySeconds: 5
@@ -450,13 +384,12 @@ synchrony:
     #- -Dsynchrony.example.system.property=46
 
   shutdown:
+    terminationGracePeriodSeconds: 25
 
   additionalLibraries: []
 
   additionalVolumeMounts: []
 
-  # -- Defines any additional ports for the Synchrony container.
-  #
   additionalPorts: []
 
   topologySpreadConstraints: []
@@ -469,26 +402,12 @@ synchrony:
 
 fluentd:
 
-  # -- Set to 'true' if the Fluentd sidecar (DaemonSet) should be added to each pod
-  #
   enabled: false
-
-  # -- The Fluentd sidecar image repository
-  #
   imageRepo: fluent/fluentd-kubernetes-daemonset
-
-  # -- The Fluentd sidecar image tag
-  #
   imageTag: v1.11.5-debian-elasticsearch7-1.2
-
   resources: {}
-
   command:
-
   customConfigFile: false
-
-  # -- Custom fluent.conf file
-  #
   fluentdCustomConfig: {}
 
   httpPort: 9880
@@ -496,55 +415,29 @@ fluentd:
   # Elasticsearch config based on your ELK stack
   #
   elasticsearch:
-
-    # -- Set to 'true' if Fluentd should send all log events to an Elasticsearch service.
-    #
     enabled: true
-
-    # -- The hostname of the Elasticsearch service that Fluentd should send logs to.
-    #
     hostname: elasticsearch
-
-    # -- The prefix of the Elasticsearch index name that will be used
-    #
     indexNamePrefix: confluence
 
-  # -- Specify custom volumes to be added to Fluentd container (e.g. more log sources)
-  #
   extraVolumes: []
 
-# -- Custom annotations that will be applied to all Confluence pods
-#
 podAnnotations: {}
 #  name: <value>
 
-# -- Custom labels that will be applied to all Confluence pods
-#
 podLabels: {}
 #  name: <value>
 
-# -- Standard K8s node-selectors that will be applied to all Confluence pods
-#
 nodeSelector: {}
 #  name: <value>
 
-# -- Standard K8s tolerations that will be applied to all Confluence pods
-#
 tolerations: []
-# - effect: <name>
-#   operator: <operator>
-#   key: <key>
 
-# -- Standard K8s affinities that will be applied to all Confluence pods
-#
 affinity: {}
 
 schedulerName:
 
 priorityClassName:
 
-# -- Additional container definitions that will be added to all Confluence pods
-#
 additionalContainers: []
 
 additionalInitContainers: []
@@ -562,29 +455,16 @@ podDisruptionBudget:
   minAvailable:
   maxUnavailable:
 
-# -- Create additional ConfigMaps with given names, keys and content. Ther Helm release name will be used as a prefix
-# for a ConfigMap name, fileName is used as subPath
-#
 additionalConfigMaps: []
 
 atlassianAnalyticsAndSupport:
 
   analytics:
-
-    # -- Mount ConfigMap with selected Helm chart values as a JSON
-    # which DC products will read and send analytics events to Atlassian data pipelines
-    #
     enabled: true
 
   helmValues:
-
-    # -- Mount ConfigMap with selected Helm chart values as a YAML file
-    # which can be optionally including to support.zip
-    #
     enabled: true
 
-# -- Metadata and pod spec for pods started in Helm tests
-#
 testPods:
   resources: {}
   labels: {}
@@ -603,23 +483,12 @@ openshift:
 
 
 opensearch:
-
-  # -- Deploy OpenSearch Helm chart and Configure Confluence to use it as a search platform
-  #
   enabled: false
 
   credentials:
-    # -- Let the Helm chart create a secret with an auto generated initial admin password
-    #
     createSecret: true
-
-    # -- Use an existing secret with the key OPENSEARCH_INITIAL_ADMIN_PASSWORD holding the initial admin password
-    #
     existingSecretRef:
       name:
-
-  # -- OpenSearch helm specific values, see: https://github.com/opensearch-project/helm-charts/blob/main/charts/opensearch/values.yaml
-  #
   singleNode: true
   resources:
     requests:
@@ -632,8 +501,4 @@ opensearch:
       value: "false"
   envFrom:
     - secretRef:
-         # -- If using a pre-created secret, make sure to change secret name to match opensearch.credentials.existingSecretRef.name
-         #
          name: opensearch-initial-password
-
-
