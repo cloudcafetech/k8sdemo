@@ -45,6 +45,7 @@ subjectAltName = @alt_names
 DNS.1 = minio-svc.minio-store.svc.cluster.local
 EOF
 openssl req -new -x509 -nodes -days 730 -keyout private.key -out public.crt -config openssl.conf
+cp public.crt repo2-ca.crt
 
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-selfsign.yaml
 kubectl create secret generic minio-server-secret --from-file=./public.crt --from-file=./private.key -n minio-store
