@@ -140,7 +140,8 @@ spec:
         repo2-retention-full-type: time
         repo2-s3-uri-style: path
         repo2-storage-verify-tls: "n"
-        repo2-storage-port: "9000"
+        repo2-storage-port: "443"
+        #repo2-storage-port: "9000"
         repo2-storage-ca-file: /etc/pgbackrest/conf.d/repo2-ca.crt
       manual:
         options:
