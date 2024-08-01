@@ -223,6 +223,7 @@ EOF
 
 kubectl create -f pgc.yaml
 kubectl config set-context --current --namespace=confluence
+kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
 kubectl get po -w
 ```
 
@@ -231,11 +232,6 @@ kubectl get po -w
 ```
 DBPASS=$(kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence)
 kubectl create secret generic confluence-db --from-literal=username='confluence' --from-literal=password="$DBPASS" -n confluence
-helm repo add atlassian-data-center https://atlassian.github.io/data-center-helm-charts
-helm repo update
-
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/values-confluence.yaml
-helm install confluence atlassian-data-center/confluence --namespace confluence --values values-confluence.yaml
 
 cat <<EOF > pvc.yaml
 apiVersion: v1
@@ -255,8 +251,13 @@ spec:
   storageClassName: local-path
   volumeMode: Filesystem
 EOF
-kubectl delete -f pvc.yaml
 kubectl create -f pvc.yaml
+
+helm repo add atlassian-data-center https://atlassian.github.io/data-center-helm-charts
+helm repo update
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/values-confluence.yaml
+helm install confluence atlassian-data-center/confluence --namespace confluence --values values-confluence.yaml
+kubectl get po -w
 ```
 
 - Manual DB Backup
