@@ -84,7 +84,6 @@ metadata:
   namespace: confluence
 data:
   init.sql: |
-    CREATE USER confluence PASSWORD 'confluence';
     CREATE SCHEMA confluence_db;
     GRANT USAGE ON SCHEMA confluence_db TO confluence;
     GRANT CREATE ON SCHEMA confluence_db TO confluence;
@@ -216,9 +215,8 @@ spec:
       replicas: 1
 
   users:
-  - name: research
+  - name: confluence
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
-  - name: postgres
 
   openshift: false
 EOF
@@ -231,8 +229,8 @@ kubectl get po -w
 - Deploy Confluence
 
 ```
-DBPASS=$(kubectl get secrets pgatlaciandb-pguser-postgres -o go-template='{{.data.password | base64decode}}' -n confluence)
-kubectl create secret generic confluence-db --from-literal=username='postgres' --from-literal=password="$DBPASS" -n confluence
+DBPASS=$(kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence)
+kubectl create secret generic confluence-db --from-literal=username='confluence' --from-literal=password="$DBPASS" -n confluence
 helm repo add atlassian-data-center https://atlassian.github.io/data-center-helm-charts
 helm repo update
 
