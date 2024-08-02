@@ -41,4 +41,4 @@ spec:
       stdin: true
       tty: true
       command: ["/bin/sh"]
-      # conncet command : psql -h <K8S-SVC> -U <USER> --password -p 5432 <DBNAME>
+      # conncet command : export PGPASSWORD=<PASSWORD>; psql -h <K8S-SVC> -U <USER> -p 5432 <DBNAME>
