@@ -23,7 +23,7 @@ serviceAccount:
 
 database:
   type: postgresql
-  url: 'jdbc:postgresql://pgatlaciandb-ha.confluence.svc.cluster.local:5432/confluence_db'
+  url: 'jdbc:postgresql://pgatlaciandb-primary.confluence.svc.cluster.local:5432/confluence_db'
   credentials:
     secretName: confluence-db
     usernameSecretKey: username
