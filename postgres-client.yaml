@@ -1,39 +1,39 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: pg-client
+  name: postgresql-client
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: pg-client
+  name: postgresql-client
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pg-client
+  name: postgresql-client
 roleRef:
   kind: Role
-  name: pg-client
+  name: postgresql-client
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: pg-client
+    name: postgresql-client
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: pg-client
+  name: postgresql-client
   labels:
-    app: pg-client 
+    app: postgresql-client
 spec:
-  serviceAccountName: pg-client
+  serviceAccountName: postgresql-client
   securityContext:
     runAsNonRoot: true
     supplementalGroups: [ 10001] 
     fsGroup: 10001    
   containers:
-    - name: pg-client
+    - name: postgresql-client
       image: andreswebs/postgresql-client
       imagePullPolicy: Always
       securityContext:
