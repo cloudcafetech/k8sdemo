@@ -34,7 +34,7 @@ spec:
     fsGroup: 10001    
   containers:
     - name: pg-client
-      image: andreswebs/pg-client
+      image: andreswebs/postgresql-client
       imagePullPolicy: Always
       securityContext:
         runAsUser: 1000      
