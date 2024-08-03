@@ -177,26 +177,6 @@ spec:
   patroni:
     switchover:
       enabled: true
-    dynamicConfiguration:
-      postgresql:
-        pg_hba:
-          - host all all 0.0.0.0/0 md5
-        parameters:
-          listen_addresses : '*'
-          max_locks_per_transaction: 2048
-          max_parallel_workers: 8
-          max_parallel_workers_per_gather: 2
-          max_pred_locks_per_transaction: 2048
-          max_worker_processes: 26
-          shared_buffers: 2GB
-          shared_preload_libraries: pgaudit,timescaledb
-          synchronous_commit: "on"
-          synchronous_standby_names: '*'
-          timescaledb.license: timescale
-          timescaledb.max_background_workers: 16
-          wal_keep_size: 2048
-          wal_level: replica
-          work_mem: 100MB
 
   monitoring:
     pgmonitor:
@@ -223,7 +203,13 @@ EOF
 
 kubectl create -f pgc.yaml
 kubectl config set-context --current --namespace=confluence
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
+kubectl create -f postgres-client.yaml
 kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
+sleep 20
+kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
+kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
+kubectl exec -it postgresql-client -- export PGPASSWORD=river@123456;psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
 kubectl get po -w
 ```
 
