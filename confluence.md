@@ -209,7 +209,7 @@ kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password
 sleep 20
 kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
 kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
-kubectl exec -it postgresql-client -- export PGPASSWORD=river@123456;psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
+kubectl exec -it postgresql-client -- psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
 kubectl get po -w
 ```
 
