@@ -23,7 +23,7 @@ serviceAccount:
 
 database:
   type: postgresql
-  url: 'jdbc:postgresql://pgatlaciandb-primary.confluence.svc.cluster.local:5432/confluence_db'
+  url: 'jdbc:postgresql://pgatlaciandb-primary.confluence.svc:5432/confluence_db'
   credentials:
     secretName: confluence-db
     usernameSecretKey: username
@@ -122,7 +122,9 @@ confluence:
   additionalLibraries: []
   additionalBundledPlugins: []
   additionalVolumeMounts: []
-  additionalEnvironmentVariables: []
+  additionalEnvironmentVariables:
+  - name: ATL_FORCE_CFG_UPDATE
+    value: "true"
   additionalPorts: []
   additionalVolumeClaimTemplates: []
   topologySpreadConstraints: []
