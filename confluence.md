@@ -201,6 +201,7 @@ spec:
 EOF
 
 kubectl create -f pgc.yaml
+sleep 10
 kubectl config set-context --current --namespace=confluence
 kubectl wait po -l postgres-operator.crunchydata.com/instance-set=pgatlaciandb --for=condition=Ready --timeout=5m -n confluence
 kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
@@ -260,7 +261,7 @@ metadata:
   namespace: confluence
 spec:
   ports:
-  - nodePort: 30399
+  - nodePort: 30050
     port: 5050
     protocol: TCP
     targetPort: 5050
@@ -274,7 +275,6 @@ EOF
 kubectl create -f pgadmin.yaml -n confluence
 kubectl wait po -l postgres-operator.crunchydata.com/pgadmin=pgadmin --for=condition=Ready --timeout=5m -n confluence 
 kubectl create secret generic pgadmin-password-secret -n confluence --from-literal=admin-password=admin2675 --from-literal=user-password=user2675
-
 ```
 
 - Deploy Confluence
