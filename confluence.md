@@ -223,58 +223,76 @@ echo 'river@123456' | kubectl exec -it postgresql-client -- psql -U confluence -
 
 ```
 cat <<EOF > pgadmin.yaml
-apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: PGAdmin
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: pgadmin
-  namespace: confluence
+ name: pgadmin-config
+data:
+ servers.json: |
+   {
+       "Servers": {
+         "1": {
+           "Name": "PostgreSQL DB",
+           "Group": "Servers",
+           "Port": 5432,
+           "Username": "confluence",
+           "Host": "pgatlaciandb-ha.confluence.svc",
+           "SSLMode": "prefer",
+           "MaintenanceDB": "confluence_db"
+         }
+       }
+   }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin-deployment
 spec:
-  dataVolumeClaimSpec:
-    accessModes:
-    - "ReadWriteOnce"
-    resources:
-      requests:
-        storage: 1Gi
-  serverGroups:
-  - name: supply
-    postgresClusterSelector: {}
-  users:
-  - username: admin@pgadmin
-    role: Administrator
-    passwordRef:
-      name: pgadmin-password-secret
-      key: admin-password
-  - username: user@pgadmin
-    role: User
-    passwordRef:
-      name: pgadmin-password-secret
-      key: user-password
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4
+          ports:
+          - containerPort: 80
+          env:
+          - name: PGADMIN_DEFAULT_EMAIL
+            value: admin@example.com
+          - name: PGADMIN_DEFAULT_PASSWORD
+            value: admin2675
+          volumeMounts:
+          - name: pgadmin-config
+            mountPath: /pgadmin4/servers.json
+            subPath: servers.json
+            readOnly: true
+      volumes:
+      - name: pgadmin-config
+        configMap:
+          name: pgadmin-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    postgres-operator.crunchydata.com/data: pgadmin
-    postgres-operator.crunchydata.com/pgadmin: pgadmin
-    postgres-operator.crunchydata.com/role: pgadmin
-  name: pgadmin-svc
-  namespace: confluence
+  name: pgadmin-service
 spec:
-  ports:
-  - nodePort: 30050
-    port: 5050
-    protocol: TCP
-    targetPort: 5050
   selector:
-    postgres-operator.crunchydata.com/data: pgadmin
-    postgres-operator.crunchydata.com/pgadmin: pgadmin
-    postgres-operator.crunchydata.com/role: pgadmin
-  sessionAffinity: None
+    app: pgadmin
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30432
   type: NodePort
 EOF
 kubectl create -f pgadmin.yaml -n confluence
-kubectl wait po -l postgres-operator.crunchydata.com/pgadmin=pgadmin --for=condition=Ready --timeout=5m -n confluence 
-kubectl create secret generic pgadmin-password-secret -n confluence --from-literal=admin-password=admin2675 --from-literal=user-password=user2675
+kubectl wait po -l app=pgadmin --for=condition=Ready --timeout=5m -n confluence 
 ```
 
 - Deploy Confluence
