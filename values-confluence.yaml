@@ -117,7 +117,7 @@ confluence:
   shutdown:
     terminationGracePeriodSeconds: 25
     command: "/shutdown-wait.sh"
-  forceConfigUpdate: false
+  forceConfigUpdate: true
   additionalJvmArgs: []
   additionalLibraries: []
   additionalBundledPlugins: []
