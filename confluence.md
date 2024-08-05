@@ -84,6 +84,7 @@ metadata:
   namespace: confluence
 data:
   init.sql: |
+    -- DB SQL for CONFLUENCE
     CREATE SCHEMA confluence_db;
     GRANT USAGE ON SCHEMA confluence_db TO confluence;
     GRANT CREATE ON SCHEMA confluence_db TO confluence;
@@ -91,6 +92,22 @@ data:
     GRANT ALL ON ALL TABLES IN SCHEMA confluence_db TO confluence;
     CREATE DATABASE confluence_db WITH ENCODING 'UTF-8' OWNER confluence LC_COLLATE = 'en_US.UTF-8' TEMPLATE template0;
     GRANT CONNECT ON DATABASE confluence_db TO confluence;
+    -- DB SQL for JIRA
+    CREATE SCHEMA jira_db;
+    GRANT USAGE ON SCHEMA jira_db TO jira;
+    GRANT CREATE ON SCHEMA jira_db TO jira;
+    GRANT ALL ON SCHEMA jira_db TO jira;
+    GRANT ALL ON ALL TABLES IN SCHEMA jira_db TO jira;
+    CREATE DATABASE jira_db WITH ENCODING 'UTF-8' OWNER jira LC_COLLATE = 'en_US.UTF-8' TEMPLATE template0;
+    GRANT CONNECT ON DATABASE jira_db TO jira;
+    -- DB SQL for BITBUCKET
+    CREATE SCHEMA bitbucket_db;
+    GRANT USAGE ON SCHEMA bitbucket_db TO bitbucket;
+    GRANT CREATE ON SCHEMA bitbucket_db TO bitbucket;
+    GRANT ALL ON SCHEMA bitbucket_db TO bitbucket;
+    GRANT ALL ON ALL TABLES IN SCHEMA bitbucket_db TO bitbucket;
+    CREATE DATABASE bitbucket_db WITH ENCODING 'UTF-8' OWNER bitbucket LC_COLLATE = 'en_US.UTF-8' TEMPLATE template0;
+    GRANT CONNECT ON DATABASE bitbucket_db TO bitbucket;
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -197,6 +214,10 @@ spec:
   users:
   - name: confluence
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
+  - name: jira
+    options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
+  - name: bitbucket
+    options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
 
   openshift: false
 EOF
@@ -206,6 +227,8 @@ kubectl config set-context --current --namespace=confluence
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
 kubectl create -f postgres-client.yaml
 kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
+kubectl patch secret pgatlaciandb-pguser-jira -p '{"stringData":{"password":"pond@123456","verifier":""}}' -n confluence
+kubectl patch secret pgatlaciandb-pguser-bitbucket -p '{"stringData":{"password":"ocen@123456","verifier":""}}' -n confluence
 sleep 20
 kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
 kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
