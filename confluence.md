@@ -166,17 +166,6 @@ spec:
         - --log-level-console=info
         repoName: repo2
       repos:
-        - name: repo1
-          schedules:
-            full: "0 1 * * 0"
-            incremental: "0 1 * * 1-6"        
-          volume:
-            volumeClaimSpec:
-              accessModes:
-                - ReadWriteOnce
-              resources:
-                requests:
-                  storage: 10Gi
         - name: repo2
           schedules:
             full: "0 1 * * 0"
@@ -199,17 +188,6 @@ spec:
     pgmonitor:
       exporter:
         image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.3.1-0
-
-  userInterface:
-    pgAdmin:
-      dataVolumeClaimSpec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 4Gi
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-22     
-      replicas: 1
 
   users:
   - name: confluence
@@ -234,6 +212,42 @@ kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.passw
 kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
 kubectl exec -it postgresql-client -- psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
 kubectl get po -w
+```
+
+- Setup PGAdmin
+
+```
+
+cat <<EOF > pgadmin.yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: pgadmin
+  namespace: confluence
+spec:
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+  - name: supply
+    postgresClusterSelector: {}
+  users:
+  - username: admin@example.com
+    role: Administrator
+    passwordRef:
+      name: pgadmin-password-secret
+      key: admin-password
+  - username: user@example.com
+    role: User
+    passwordRef:
+      name: pgadmin-password-secret
+      key: user-password
+EOF
+
+kubectl create secret generic pgadmin-password-secret -n confluence --from-literal=admin-password=admin2675 --from-literal=user-password=user2675
 ```
 
 - Deploy Confluence
