@@ -202,22 +202,25 @@ EOF
 
 kubectl create -f pgc.yaml
 kubectl config set-context --current --namespace=confluence
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
-kubectl create -f postgres-client.yaml
+kubectl wait po -l postgres-operator.crunchydata.com/instance-set=pgatlaciandb --for=condition=Ready --timeout=5m -n confluence
 kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
 kubectl patch secret pgatlaciandb-pguser-jira -p '{"stringData":{"password":"pond@123456","verifier":""}}' -n confluence
 kubectl patch secret pgatlaciandb-pguser-bitbucket -p '{"stringData":{"password":"ocen@123456","verifier":""}}' -n confluence
-sleep 20
-kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
+```
+
+- Verify
+
+```
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
+kubectl create -f postgres-client.yaml
 kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
-kubectl exec -it postgresql-client -- psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
-kubectl get po -w
+kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
+echo 'river@123456' | kubectl exec -it postgresql-client -- psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
 ```
 
 - Setup PGAdmin
 
 ```
-
 cat <<EOF > pgadmin.yaml
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PGAdmin
@@ -235,19 +238,43 @@ spec:
   - name: supply
     postgresClusterSelector: {}
   users:
-  - username: admin@example.com
+  - username: admin@pgadmin
     role: Administrator
     passwordRef:
       name: pgadmin-password-secret
       key: admin-password
-  - username: user@example.com
+  - username: user@pgadmin
     role: User
     passwordRef:
       name: pgadmin-password-secret
       key: user-password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/data: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
+    postgres-operator.crunchydata.com/role: pgadmin
+  name: pgadmin-svc
+  namespace: confluence
+spec:
+  ports:
+  - nodePort: 30399
+    port: 5050
+    protocol: TCP
+    targetPort: 5050
+  selector:
+    postgres-operator.crunchydata.com/data: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
+    postgres-operator.crunchydata.com/role: pgadmin
+  sessionAffinity: None
+  type: NodePort
 EOF
-
+kubectl create -f pgadmin.yaml -n confluence
+kubectl wait po -l postgres-operator.crunchydata.com/pgadmin=pgadmin --for=condition=Ready --timeout=5m -n confluence 
 kubectl create secret generic pgadmin-password-secret -n confluence --from-literal=admin-password=admin2675 --from-literal=user-password=user2675
+
 ```
 
 - Deploy Confluence
