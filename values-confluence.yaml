@@ -2,7 +2,8 @@ replicaCount: 1
 image:
   repository: atlassian/confluence
   pullPolicy: IfNotPresent
-  tag: "7.19.18"
+  #tag: "7.19.18"
+  tag: "9.0.1"  
 serviceAccount:
   create: true
   name:
@@ -127,6 +128,9 @@ confluence:
     value: "true"
   additionalPorts: []
   additionalVolumeClaimTemplates: []
+  additionalCertificates:
+    secretName: confluence-ca
+    customCmd: set -e; cp $JAVA_HOME/lib/security/cacerts /var/ssl/cacerts; chmod 664 /var/ssl/cacerts; for crt in /tmp/crt/certs; do echo "Adding $crt to keystore"; keytool -import - keystore /var/ssl/cacerts -storepass changeit -noprompt -alias $(echo $(basename $crt)) -file $crt; done;  
   topologySpreadConstraints: []
   jvmDebug:
     enabled: false
@@ -168,6 +172,9 @@ synchrony:
   additionalLibraries: []
   additionalVolumeMounts: []
   additionalPorts: []
+  additionalCertificates:
+    secretName: confluence-ca
+    customCmd: set -e; cp $JAVA_HOME/lib/security/cacerts /var/ssl/cacerts; chmod 664 /var/ssl/cacerts; for crt in /tmp/crt/certs; do echo "Adding $crt to keystore"; keytool -import - keystore /var/ssl/cacerts -storepass changeit -noprompt -alias $(echo $(basename $crt)) -file $crt; done;  
   topologySpreadConstraints: []
 
 monitoring:
