@@ -191,11 +191,18 @@ spec:
 
   users:
   - name: confluence
+    password:
+      type: AlphaNumeric
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
   - name: jira
+    password:
+      type: AlphaNumeric
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
   - name: bitbucket
+    password:
+      type: AlphaNumeric
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
+  - name: postgres
 
   openshift: false
 EOF
