@@ -124,6 +124,8 @@ confluence:
   additionalBundledPlugins: []
   additionalVolumeMounts: []
   additionalEnvironmentVariables:
+  - name: ATL_DB_POOLMAXSIZE
+    value: "200"  
   - name: ATL_FORCE_CFG_UPDATE
     value: "true"
   additionalPorts: []
