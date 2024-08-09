@@ -81,6 +81,7 @@ EOF
 kubectl config set-context --current --namespace=confluence
 kubectl create -f pgc.yaml
 kubectl config set-context --current --namespace=confluence
+sleep 20
 kubectl wait po -l postgres-operator.crunchydata.com/instance-set=pgatlaciandb --for=condition=Ready --timeout=5m -n confluence
 ```
 
