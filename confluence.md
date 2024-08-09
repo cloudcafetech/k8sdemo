@@ -219,6 +219,14 @@ kubectl patch secret pgatlaciandb-pguser-bitbucket -p '{"stringData":{"password"
 - Verify
 
 ```
+PGPOD=$(kubectl get pods -l postgres-operator.crunchydata.com/instance-set=pgatlaciandb -o custom-columns=:metadata.name)
+kubectl exec -it $PGPOD -- psql -c "\du"
+kubectl exec -it $PGPOD -- psql -c "\l"
+```
+
+OR
+
+```
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
 kubectl create -f postgres-client.yaml
 kubectl wait po postgresql-client --for=condition=Ready --timeout=5m -n confluence
