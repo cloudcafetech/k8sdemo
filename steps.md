@@ -66,6 +66,8 @@ spec:
 
   users:
   - name: confluence
+    password:
+      type: AlphaNumeric
     options: "SUPERUSER CREATEROLE LOGIN CREATEDB"
 
   openshift: false
@@ -73,17 +75,7 @@ EOF
 
 kubectl config set-context --current --namespace=confluence
 kubectl create -f pgc.yaml
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/postgres-client.yaml
-kubectl create -f postgres-client.yaml
 kubectl get po -w
-
-sleep 10
-kubectl patch secret pgatlaciandb-pguser-confluence -p '{"stringData":{"password":"river@123456","verifier":""}}' -n confluence
-sleep 10
-
-kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence; echo
-
-kubectl exec -it postgresql-client -- psql -U confluence -d confluence_db -h pgatlaciandb-ha -p 5432 -c "select * from information_schema.role_table_grants where grantee='confluence';"
 
 ---------
 
