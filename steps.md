@@ -1,3 +1,5 @@
+- DB
+
 ```
 kubectl create ns minio-store
 kubectl create ns cert-manager
@@ -34,8 +36,10 @@ metadata:
   name: pgatlaciandb
   namespace: confluence
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2
-  postgresVersion: 14
+  #image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.3-1
+  #postgresVersion: 14
+  postgresVersion: 16
   port: 5432
   instances:
     - name: pgatlaciandb
@@ -49,7 +53,8 @@ spec:
 
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.41-2
+      #image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.41-2
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.51-1
       repos:
       - name: repo1
         volume:
@@ -75,10 +80,13 @@ EOF
 
 kubectl config set-context --current --namespace=confluence
 kubectl create -f pgc.yaml
-kubectl get po -w
+kubectl config set-context --current --namespace=confluence
+kubectl wait po -l postgres-operator.crunchydata.com/instance-set=pgatlaciandb --for=condition=Ready --timeout=5m -n confluence
+```
 
----------
+- Confluence
 
+```
 DBPASS=$(kubectl get secrets pgatlaciandb-pguser-confluence -o go-template='{{.data.password | base64decode}}' -n confluence)
 kubectl create secret generic confluence-db --from-literal=username='confluence' --from-literal=password="$DBPASS" -n confluence
 
