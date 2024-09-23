@@ -77,7 +77,7 @@ featureGates: ""
 maxConcurrentChallenges: 60
 
 image:
-  repository: quay.io/jetstack/cert-manager-controller
+  repository: 172.30.1.2:5000/cert-manager-controller:v1.13.3
   # You can manage a registry with
   # registry: quay.io
   # repository: jetstack/cert-manager-controller
@@ -153,7 +153,7 @@ dns01RecursiveNameservers: ""
 dns01RecursiveNameserversOnly: false
 
 # Additional command line flags to pass to cert-manager controller binary.
-# To see all available flags run docker run quay.io/jetstack/cert-manager-controller:<version> --help
+# To see all available flags run docker run 172.30.1.2:5000/cert-manager-controller:<version> --help
 extraArgs: []
   # Use this flag to enable or disable arbitrary controllers, for example, disable the CertificiateRequests approver
   # - --controllers=*,-certificaterequests-approver
@@ -365,7 +365,7 @@ webhook:
   # validatingWebhookConfigurationAnnotations: {}
 
   # Additional command line flags to pass to cert-manager webhook binary.
-  # To see all available flags run docker run quay.io/jetstack/cert-manager-webhook:<version> --help
+  # To see all available flags run docker run 172.30.1.2:5000/cert-manager-webhook:<version> --help
   extraArgs: []
   # Path to a file containing a WebhookConfiguration object used to configure the webhook
   # - --config=<path-to-config-file>
@@ -411,7 +411,7 @@ webhook:
   serviceLabels: {}
 
   image:
-    repository: quay.io/jetstack/cert-manager-webhook
+    repository: 172.30.1.2:5000/cert-manager-webhook:v1.13.3
     # You can manage a registry with
     # registry: quay.io
     # repository: jetstack/cert-manager-webhook
@@ -547,7 +547,7 @@ cainjector:
   # podAnnotations: {}
 
   # Additional command line flags to pass to cert-manager cainjector binary.
-  # To see all available flags run docker run quay.io/jetstack/cert-manager-cainjector:<version> --help
+  # To see all available flags run docker run 172.30.1.2:5000/cert-manager-cainjector:<version> --help
   extraArgs: []
   # Enable profiling for cainjector
   # - --enable-profiling=true
@@ -570,7 +570,7 @@ cainjector:
   podLabels: {}
 
   image:
-    repository: quay.io/jetstack/cert-manager-cainjector
+    repository: 172.30.1.2:5000/cert-manager-cainjector:v1.13.3
     # You can manage a registry with
     # registry: quay.io
     # repository: jetstack/cert-manager-cainjector
@@ -610,7 +610,7 @@ cainjector:
 
 acmesolver:
   image:
-    repository: quay.io/jetstack/cert-manager-acmesolver
+    repository: 172.30.1.2:5000/cert-manager-acmesolver:v1.13.3
     # You can manage a registry with
     # registry: quay.io
     # repository: jetstack/cert-manager-acmesolver
@@ -665,7 +665,7 @@ startupapicheck:
   # podAnnotations: {}
 
   # Additional command line flags to pass to startupapicheck binary.
-  # To see all available flags run docker run quay.io/jetstack/cert-manager-ctl:<version> --help
+  # To see all available flags run docker run 172.30.1.2:5000/cert-manager-ctl:<version> --help
   extraArgs: []
 
   resources: {}
@@ -684,7 +684,7 @@ startupapicheck:
   podLabels: {}
 
   image:
-    repository: quay.io/jetstack/cert-manager-ctl
+    repository: 172.30.1.2:5000/cert-manager-ctl:v1.13.3
     # You can manage a registry with
     # registry: quay.io
     # repository: jetstack/cert-manager-ctl
