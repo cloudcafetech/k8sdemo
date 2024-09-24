@@ -1,5 +1,7 @@
-apiVersion: v2
+apiVersion: v1
+appVersion: v1.13.3
 name: cert-manager
 version: v1.13.3
 description: A Helm chart for cert-manager
 home: https://github.com/cloudcafetech/k8sdemo/blob/main/cert-manager
+kubeVersion: '>= 1.22.0-0'
