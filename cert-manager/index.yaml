@@ -6,5 +6,5 @@ entries:
     description: A Helm chart for cert-manager
     name: cert-manager
     urls:
-    - https://github.com/cloudcafetech/k8sdemo/blob/main/cert-manager/cert-manager-v1.13.3.tgz
+    - https://raw.githubusercontent.com/cloudcafetech/k8sdemo/refs/heads/main/cert-manager/cert-manager-v1.13.3.tgz
     version: v1.13.3
