@@ -1,99 +1,19 @@
-global:
-  priorityClassName: ""
-  rbac:
-    create: true
-    # Aggregate ClusterRoles to Kubernetes default user-facing roles. Ref: https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles
-    aggregateClusterRoles: true
-
-  podSecurityPolicy:
-    enabled: false
-    useAppArmor: true
-
-  # Set the verbosity of cert-manager. Range of 0 - 6 with 6 being the most verbose.
-  logLevel: 2
-
-  leaderElection:
-    # Override the namespace used for the leader election lease
-    namespace: "kube-system"
-
-    # The duration that non-leader candidates will wait after observing a
-    # leadership renewal until attempting to acquire leadership of a led but
-    # unrenewed leader slot. This is effectively the maximum duration that a
-    # leader can be stopped before it is replaced by another candidate.
-    # leaseDuration: 60s
-
-    # The interval between attempts by the acting master to renew a leadership
-    # slot before it stops leading. This must be less than or equal to the
-    # lease duration.
-    # renewDeadline: 40s
-
-    # The duration the clients should wait between attempting acquisition and
-    # renewal of a leadership.
-    # retryPeriod: 15s
-
-installCRDs: false
-
-replicaCount: 1
-
-strategy: {}
-  # type: RollingUpdate
-  # rollingUpdate:
-  #   maxSurge: 0
-  #   maxUnavailable: 1
-
-podDisruptionBudget:
-  enabled: false
-
-  # minAvailable and maxUnavailable can either be set to an integer (e.g. 1)
-  # or a percentage value (e.g. 25%)
-  # if neither minAvailable or maxUnavailable is set, we default to `minAvailable: 1`
-  # minAvailable: 1
-  # maxUnavailable: 1
-
-# Comma separated list of feature gates that should be enabled on the
-# controller pod.
-featureGates: ""
-
-# The maximum number of challenges that can be scheduled as 'processing' at once
-maxConcurrentChallenges: 60
-
-image:
-  repository: 172.30.1.2:5000/jetstack/cert-manager-controller:v1.13.3
-  pullPolicy: IfNotPresent
-
-prometheus:
-  enabled: true
-  servicemonitor:
-    enabled: false
-    prometheusInstance: default
-    targetPort: 9402
-    path: /metrics
-    interval: 60s
-    scrapeTimeout: 30s
-    labels: {}
-    annotations: {}
-    honorLabels: false
-    endpointAdditionalProperties: {}
-
-webhook:
+cert-manager:
+  installCRDs: false
   replicaCount: 1
-  timeoutSeconds: 10
   image:
-    repository: 172.30.1.2:5000/jetstack/cert-manager-webhook:v1.13.3
+    repository: 172.30.1.2:5000/jetstack/cert-manager-controller:v1.13.3
+    pullPolicy: IfNotPresent
 
-cainjector:
-  enabled: true
-  replicaCount: 1
-
-  image:
-    repository: 172.30.1.2:5000/jetstack/cert-manager-cainjector:v1.13.3
-
-acmesolver:
-  image:
-    repository: 172.30.1.2:5000/jetstack/cert-manager-acmesolver:v1.13.3
-
-startupapicheck:
-  enabled: true
-
-  image:
-    repository: 172.30.1.2:5000/jetstack/cert-manager-ctl:v1.13.3
+  webhook:
+    image:
+      repository: 172.30.1.2:5000/jetstack/cert-manager-webhook:v1.13.3
+  cainjector:
+    image:
+      repository: 172.30.1.2:5000/jetstack/cert-manager-cainjector:v1.13.3
+  acmesolver:
+    image:
+      repository: 172.30.1.2:5000/jetstack/cert-manager-acmesolver:v1.13.3
+  startupapicheck:
+    image:
+      repository: 172.30.1.2:5000/jetstack/cert-manager-ctl:v1.13.3
