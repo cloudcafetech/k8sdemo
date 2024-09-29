@@ -88,3 +88,40 @@ wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio/local
 kubectl create -f minio.yaml
 kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
 ```
+
+- Multi Kubernetes Dashboard
+
+* Install metrics-server on target clusters
+
+```
+kubectl get po  -n kube-system | grep metrics-server
+kubectl apply -f https://raw.githubusercontent.com/kore3lab/dashboard/master/scripts/install/metrics-server/metrics-server-v0.5.1-kubelet-insecure-tls.yaml
+```
+
+* Installation of Multi Kubernetes Dashboard
+
+```
+kubectl apply -f https://raw.githubusercontent.com/kore3lab/dashboard/master/scripts/install/kubernetes/recommended.yaml
+```
+
+* Installation using Helm-chart
+
+```
+helm repo add kore https://raw.githubusercontent.com/kore3lab/dashboard/master/scripts/install/kubernetes
+helm search repo kore
+
+kubectl create ns kore
+helm install dashboard kore/kore-board -n kore \
+  --set backend.service.type=NodePort \
+  --set backend.service.nodePort=30081 \
+  --set frontend.service.type=NodePort \
+  --set frontend.service.nodePort=30080
+```
+
+* Access (Open in your browser http://<HOST-IP>:30080/)
+
+On the sign-in page, enter "kore3lab" as a token string and sign in
+
+* GET KIND Cluster Kubeconfig 
+
+```kind get kubeconfig -n kk >kk-config```
