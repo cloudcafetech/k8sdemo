@@ -9,8 +9,9 @@ k8sdemo using killercoda
 
 ```
 curl -sSLo /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-curl -sLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
 chmod +x /usr/local/bin/argocd
+
+curl -sLo /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
 chmod +x /usr/local/bin/kind
 
 curl -fsSLO https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz
