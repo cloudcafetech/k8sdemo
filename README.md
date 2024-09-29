@@ -89,7 +89,7 @@ kubectl create -f minio.yaml
 kubectl wait pod/minio-0 --for=condition=Ready --timeout=5m -n minio-store
 ```
 
-- Multi Kubernetes Dashboard
+## Multi Kubernetes Dashboard
 
 * Install metrics-server on target clusters
 
