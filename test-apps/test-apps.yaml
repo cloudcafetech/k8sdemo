@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: test-apps
+  namespace: argocd
+spec:
+  generators:
+  - matrix:
+     generators:
+     - git:
+         repoURL: https://github.com/cloudcafetech/k8sdemo.git
+         revision: main
+         directories:
+         - path: test-apps/overlays/*
+     - clusters: {}
+  template:
+    metadata:
+      name: 'auth-{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/cloudcafetech/k8sdemo.git
+        targetRevision: main
+        path: '{{path}}'
+      destination:
+        server: '{{server}}'
+        #namespace: auth-system
+      syncPolicy:
+        automated:
+          selfHeal: false
+          prune: false
+        syncOptions:
+          #- CreateNamespace=true
