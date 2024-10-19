@@ -15,7 +15,7 @@ spec:
      - clusters: {}
   template:
     metadata:
-      name: 'auth-{{path.basename}}'
+      name: 'test-app-{{path.basename}}'
     spec:
       project: default
       source:
