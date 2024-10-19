@@ -1,31 +1,68 @@
-apiVersion: argoproj.io/v1alpha1 
+apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: addon
+  name: test-apps
   namespace: argocd
 spec:
   generators:
-  - list: 
-      elements: 
-      - cluster: kind
-        url: https://172.30.1.2:19091
-      - cluster: local
-        url: https://kubernetes.default.svc
-  template: 
+  - matrix:
+     generators:
+     - git:
+         repoURL: https://github.com/cloudcafetech/k8sdemo.git
+         revision: HEAD
+         directories:
+         - path: test-apps/overlays/*
+     #- clusters: {}
+     - clusters:
+         selector:
+           matchLabels:
+             # Match only clusters with `cluster-name` label equal to a cluster/overlay folder name
+             cluster-name: '{{path.basename}}'
+  template:
     metadata:
-      name: '{{cluster}}-addon'
+      name: 'test-app-{{path.basename}}'
     spec:
+      project: default
       source:
-        repoURL: https://github.com/cloudcafetech/k8sdemo
+        repoURL: https://github.com/cloudcafetech/k8sdemo.git
         targetRevision: HEAD
-        path: addon
+        path: '{{path}}'
       destination:
-        server: '{{url}}'
-        #namespace: <namespace>
+        server: '{{server}}'
+        #namespace: auth-system
+      syncPolicy:
+        automated:
+          selfHeal: false
+          prune: false
+        syncOptions:
+          #- CreateNamespace=true
+----
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: test-apps
+  namespace: argocd
+spec:
+  generators:
+  - list:
+      elements:
+      - cluster: mgm
+        url: https://kubernetes.default.svc
+      - cluster: snd
+        url: https://172.30.1.2:19091
+  template:
+    metadata:
+      name: '{{cluster}}-test-apps'
+    spec:
       project: default
       syncPolicy:
         automated:
-          prune: false
-          selfHeal: false
-        syncOptions:
-          #- CreateNamespace=true
+          prune: true
+          selfHeal: true
+      source:
+        repoURL: https://github.com/cloudcafetech/k8sdemo.git
+        targetRevision: HEAD
+        path: test-apps/overlays/{{cluster}}
+      destination:
+        server: '{{url}}'
+        #namespace: default
