@@ -5,45 +5,6 @@ metadata:
   namespace: argocd
 spec:
   generators:
-  - matrix:
-     generators:
-     - git:
-         repoURL: https://github.com/cloudcafetech/k8sdemo.git
-         revision: HEAD
-         directories:
-         - path: test-apps/overlays/*
-     #- clusters: {}
-     - clusters:
-         selector:
-           matchLabels:
-             # Match only clusters with `cluster-name` label equal to a cluster/overlay folder name
-             cluster-name: '{{path.basename}}'
-  template:
-    metadata:
-      name: 'test-app-{{path.basename}}'
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/cloudcafetech/k8sdemo.git
-        targetRevision: HEAD
-        path: '{{path}}'
-      destination:
-        server: '{{server}}'
-        #namespace: auth-system
-      syncPolicy:
-        automated:
-          selfHeal: false
-          prune: false
-        syncOptions:
-          #- CreateNamespace=true
-----
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: test-apps
-  namespace: argocd
-spec:
-  generators:
   - list:
       elements:
       - cluster: mgm
