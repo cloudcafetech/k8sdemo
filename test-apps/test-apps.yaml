@@ -4,14 +4,12 @@ metadata:
   name: argocd-apps
 spec:
   destination:
-    name: ''
     namespace: argocd
     server: 'https://kubernetes.default.svc'
   source:
     path: test-apps
     repoURL: 'https://github.com/cloudcafetech/k8sdemo'
     targetRevision: HEAD
-  sources: []
   project: default
   syncPolicy:
     automated:
