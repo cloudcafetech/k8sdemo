@@ -7,8 +7,8 @@ spec:
   generators:
   - list:
       elements:
-      #- cluster: mgm
-        #url: https://kubernetes.default.svc
+      - cluster: mgm
+        url: https://kubernetes.default.svc
       - cluster: snd
         url: https://172.30.1.2:19091
   template:
