@@ -77,8 +77,8 @@ kubectl wait po -l app.kubernetes.io/name=argocd-server --for=condition=Ready --
 argopass=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 echo y | argocd login 172.30.1.2:31080 --username admin --password $argopass
 echo y | argocd cluster add kind-kk --name snd
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/addon-appset.yaml
-wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-appset.yaml
+#wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/refs/heads/main/test-apps/addon-appset.yaml
+#wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/refs/heads/main/test-apps/minio-appset.yaml
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/argocd-apps.yaml
 echo $argopass
 
