@@ -1,0 +1,1368 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/component: dex-server
+    app.kubernetes.io/name: argocd-dex-server
+    app.kubernetes.io/part-of: argocd
+  name: argocd-dex-server
+  namespace: devtroncd
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    port: 5556
+    protocol: TCP
+    targetPort: 5556
+  - name: grpc
+    port: 5557
+    protocol: TCP
+    targetPort: 5557
+  - name: metrics
+    port: 5558
+    protocol: TCP
+    targetPort: 5558
+  selector:
+    app.kubernetes.io/name: argocd-dex-server
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: dashboard
+    release: devtron
+  name: dashboard-service
+  namespace: devtroncd
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: app
+    port: 80
+    protocol: TCP
+    targetPort: app
+  selector:
+    app: dashboard
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: devtron
+    release: devtron
+  name: devtron-service
+  namespace: devtroncd
+spec:
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: devtron
+    nodePort: 31806
+    port: 80
+    protocol: TCP
+    targetPort: devtron
+  selector:
+    app: devtron
+  sessionAffinity: None
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kubelink
+  name: kubelink-service
+  namespace: devtroncd
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: app
+    port: 50051
+    protocol: TCP
+    targetPort: app
+  selector:
+    app: kubelink
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql
+  namespace: devtroncd
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: tcp-postgresql
+  selector:
+    app: postgresql
+    release: devtron
+    role: master
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql-headless
+  namespace: devtroncd
+spec:
+  clusterIP: None
+  clusterIPs:
+  - None
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: tcp-postgresql
+    port: 5432
+    protocol: TCP
+    targetPort: tcp-postgresql
+  selector:
+    app: postgresql
+    release: devtron
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/port: "9187"
+    prometheus.io/scrape: "true"
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql-metrics
+  namespace: devtroncd
+spec:
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http-metrics
+    port: 9187
+    protocol: TCP
+    targetPort: http-metrics
+  selector:
+    app: postgresql
+    release: devtron
+    role: master
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: dex-server
+    app.kubernetes.io/name: argocd-dex-server
+    app.kubernetes.io/part-of: argocd
+  name: argocd-dex-server
+  namespace: devtroncd
+spec:
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-dex-server
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+
+      labels:
+        app.kubernetes.io/name: argocd-dex-server
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/part-of: argocd
+              topologyKey: kubernetes.io/hostname
+            weight: 5
+      containers:
+      - command:
+        - /shared/authenticator
+        - rundex
+        image: quay.io/devtron/dex:v2.30.2
+        imagePullPolicy: IfNotPresent
+        name: dex
+        ports:
+        - containerPort: 5556
+          protocol: TCP
+        - containerPort: 5557
+          protocol: TCP
+        - containerPort: 5558
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: static-files
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - cp
+        - -n
+        - /authenticator
+        - /shared
+        image: quay.io/devtron/authenticator:e414faff-393-13273
+        imagePullPolicy: IfNotPresent
+        name: copyutil
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: static-files
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: argocd-dex-server
+      serviceAccountName: argocd-dex-server
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: static-files
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: dashboard
+    release: devtron
+  name: dashboard
+  namespace: devtroncd
+spec:
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: dashboard
+      release: devtron
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: dashboard
+        release: devtron
+    spec:
+      containers:
+      - env:
+        - name: DEVTRON_APP_NAME
+          value: dashboard
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        envFrom:
+        - configMapRef:
+            name: dashboard-cm
+        - secretRef:
+            name: devtron-dashboard-secret
+        image: quay.io/devtron/dashboard:215319c7-690-25536
+        imagePullPolicy: IfNotPresent
+        name: dashboard
+        ports:
+        - containerPort: 8080
+          name: app
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: devtron-default-sa
+      serviceAccountName: devtron-default-sa
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: devtron
+    release: devtron
+  name: devtron
+  namespace: devtroncd
+spec:
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: devtron
+      release: devtron
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: devtron
+        release: devtron
+    spec:
+      containers:
+      - env:
+        - name: DEVTRON_APP_NAME
+          value: devtron
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        envFrom:
+        - configMapRef:
+            name: devtron-cm
+        - secretRef:
+            name: devtron-secret
+        - configMapRef:
+            name: devtron-custom-cm
+        - secretRef:
+            name: devtron-custom-secret
+        image: quay.io/devtron/hyperion:e17c52eb-280-25812
+        imagePullPolicy: IfNotPresent
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - ' curl -X POST -H "Content-Type: application/json" -d ''{"eventType":
+                "SIG_TERM"}'' localhost:8080/orchestrator/telemetry/summary'
+        name: devtron
+        ports:
+        - containerPort: 8080
+          name: devtron
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /cluster/component
+          name: devtron-cluster-components-vol
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: devtron
+      serviceAccountName: devtron
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: devtron-cluster-components
+        name: devtron-cluster-components-vol
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kubelink
+    chart: kubelink-4.11.1
+  name: kubelink
+  namespace: devtroncd
+spec:
+  minReadySeconds: 60
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: kubelink
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+      labels:
+        app: kubelink
+    spec:
+      containers:
+      - env:
+        - name: DEVTRON_APP_NAME
+          value: kubelink
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: PG_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: postgresql-postgresql
+        envFrom:
+        - configMapRef:
+            name: kubelink-cm
+        - secretRef:
+            name: kubelink-secret
+        image: quay.io/devtron/kubelink:6ef0fbbe-564-25533
+        imagePullPolicy: IfNotPresent
+        name: kubelink
+        ports:
+        - containerPort: 50051
+          name: app
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: devtron
+      serviceAccountName: devtron
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql
+  namespace: devtroncd
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgresql
+      release: devtron
+      role: master
+  serviceName: postgresql-postgresql-headless
+  template:
+    metadata:
+
+      labels:
+        app: postgresql
+        chart: postgresql-8.6.4
+        release: devtron
+        role: master
+      name: postgresql-postgresql
+    spec:
+      containers:
+      - env:
+        - name: BITNAMI_DEBUG
+          value: "false"
+        - name: POSTGRESQL_PORT_NUMBER
+          value: "5432"
+        - name: POSTGRESQL_VOLUME_DIR
+          value: /bitnami/postgresql
+        - name: PGDATA
+          value: /bitnami/postgresql/data
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: postgresql-postgresql
+        - name: POSTGRES_DB
+          value: orchestrator
+        - name: POSTGRESQL_ENABLE_LDAP
+          value: "no"
+        - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+          value: pgaudit, uuid-ossp
+        image: quay.io/devtron/postgres:11.9.0-debian-10-r26
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - exec pg_isready -U "postgres" -d "orchestrator" -h 127.0.0.1 -p 5432
+          failureThreshold: 6
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: postgresql-postgresql
+        ports:
+        - containerPort: 5432
+          name: tcp-postgresql
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - -e
+            - |
+              exec pg_isready -U "postgres" -d "orchestrator" -h 127.0.0.1 -p 5432
+              [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+          failureThreshold: 6
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        securityContext:
+          runAsUser: 1001
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /docker-entrypoint-initdb.d/
+          name: custom-init-scripts
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /bitnami/postgresql
+          name: data
+      - env:
+        - name: DATA_SOURCE_URI
+          value: 127.0.0.1:5432/orchestrator?sslmode=disable
+        - name: DATA_SOURCE_PASS
+          valueFrom:
+            secretKeyRef:
+              key: postgresql-password
+              name: postgresql-postgresql
+        - name: DATA_SOURCE_USER
+          value: postgres
+        image: quay.io/devtron/postgres_exporter:v0.4.7
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /
+            port: http-metrics
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: metrics
+        ports:
+        - containerPort: 9187
+          name: http-metrics
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /
+            port: http-metrics
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - /bin/sh
+        - -cx
+        - |2
+
+          mkdir -p /bitnami/postgresql/data
+          chmod 700 /bitnami/postgresql/data
+          find /bitnami/postgresql -mindepth 1 -maxdepth 1 -not -name ".snapshot" -not -name "lost+found" | \
+            xargs chown -R 1001:1001
+          chmod -R 777 /dev/shm
+        image: quay.io/devtron/minideb:latest
+        imagePullPolicy: IfNotPresent
+        name: init-chmod-data
+        resources: {}
+        securityContext:
+          runAsUser: 0
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /bitnami/postgresql
+          name: data
+        - mountPath: /dev/shm
+          name: dshm
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1001
+      serviceAccount: devtron-default-sa
+      serviceAccountName: devtron-default-sa
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: postgresql-postgresql-init-scripts
+        name: custom-init-scripts
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 1Gi
+        name: dshm
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 20Gi
+      volumeMode: Filesystem
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: app-sync-cronjob
+  namespace: devtroncd
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+    spec:
+      backoffLimit: 4
+      template:
+        metadata:
+        spec:
+          containers:
+          - env:
+            - name: PG_ADDR
+              value: postgresql-postgresql.devtroncd
+            - name: PG_DATABASE
+              value: orchestrator
+            - name: PG_USER
+              value: postgres
+            envFrom:
+            - secretRef:
+                name: devtron-secret
+            image: quay.io/devtron/chart-sync:13ffae06-150-25515
+            imagePullPolicy: IfNotPresent
+            name: chart-sync
+            resources: {}
+            securityContext:
+              allowPrivilegeEscalation: false
+              runAsNonRoot: true
+              runAsUser: 1000
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Never
+          schedulerName: default-scheduler
+          securityContext:
+            fsGroup: 1000
+            runAsGroup: 1000
+            runAsUser: 1000
+          serviceAccount: chart-sync
+          serviceAccountName: chart-sync
+          terminationGracePeriodSeconds: 30
+  schedule: 0 19 * * *
+  successfulJobsHistoryLimit: 3
+  suspend: false
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-migrate-casbin
+  namespace: devtroncd
+spec:
+  activeDeadlineSeconds: 1500
+  backoffLimit: 20
+  completionMode: NonIndexed
+  completions: 1
+  manualSelector: false
+  parallelism: 1
+  podReplacementPolicy: TerminatingOrFailed
+  selector:
+  suspend: false
+  template:
+    metadata:
+    spec:
+      containers:
+      - command:
+        - sh
+        - -c
+        - kubectl rollout restart deployment/devtron -n devtroncd && kubectl rollout
+          restart deployment/kubelink -n devtroncd
+        image: quay.io/devtron/kubectl:latest
+        imagePullPolicy: Always
+        name: devtron-rollout
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - cp -r /scripts/. /shared/
+        image: quay.io/devtron/hyperion:e17c52eb-280-25812
+        imagePullPolicy: IfNotPresent
+        name: init-devtron
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: shared-volume
+      - command:
+        - /bin/sh
+        - -c
+        - 'if [ $(MIGRATE_TO_VERSION) -eq "0" ]; then migrate -path $(SCRIPT_LOCATION)
+          -database postgres://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+          up;  else   echo $(MIGRATE_TO_VERSION); migrate -path $(SCRIPT_LOCATION)  -database
+          postgres://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+          goto $(MIGRATE_TO_VERSION);    fi '
+        env:
+        - name: SCRIPT_LOCATION
+          value: /shared/casbin/
+        - name: DB_TYPE
+          value: postgres
+        - name: DB_USER_NAME
+          value: postgres
+        - name: DB_HOST
+          value: postgresql-postgresql.devtroncd
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: casbin
+        - name: MIGRATE_TO_VERSION
+          value: "0"
+        envFrom:
+        - secretRef:
+            name: postgresql-migrator
+        image: quay.io/devtron/migrator:v4.16.2
+        imagePullPolicy: IfNotPresent
+        name: postgresql-migrate-casbin
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: shared-volume
+      restartPolicy: OnFailure
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: devtron
+      serviceAccountName: devtron
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: shared-volume
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-migrate-devtron
+  namespace: devtroncd
+spec:
+  activeDeadlineSeconds: 1500
+  backoffLimit: 20
+  completionMode: NonIndexed
+  completions: 1
+  manualSelector: false
+  parallelism: 1
+  podReplacementPolicy: TerminatingOrFailed
+  selector:
+    matchLabels:
+  suspend: false
+  template:
+    metadata:
+    spec:
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - 'if [ $(MIGRATE_TO_VERSION) -eq "0" ]; then migrate -path $(SCRIPT_LOCATION)
+          -database postgres://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+          up;  else   echo $(MIGRATE_TO_VERSION); migrate -path $(SCRIPT_LOCATION)  -database
+          postgres://$(DB_USER_NAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable
+          goto $(MIGRATE_TO_VERSION);    fi '
+        env:
+        - name: SCRIPT_LOCATION
+          value: /shared/sql/
+        - name: DB_TYPE
+          value: postgres
+        - name: DB_USER_NAME
+          value: postgres
+        - name: DB_HOST
+          value: postgresql-postgresql.devtroncd
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: orchestrator
+        - name: MIGRATE_TO_VERSION
+          value: "0"
+        envFrom:
+        - secretRef:
+            name: postgresql-migrator
+        image: quay.io/devtron/migrator:v4.16.2
+        imagePullPolicy: IfNotPresent
+        name: postgresql-migrate-devtron
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: shared-volume
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - env:
+        - name: DB_TYPE
+          value: postgres
+        - name: PG_USER
+          value: postgres
+        - name: PG_ADDR
+          value: postgresql-postgresql.devtroncd
+        - name: DB_PORT
+          value: "5432"
+        - name: PG_DATABASE
+          value: orchestrator
+        envFrom:
+        - secretRef:
+            name: devtron-secret
+        image: quay.io/devtron/devtron-utils:dup-chart-repo-v1.1.0
+        imagePullPolicy: IfNotPresent
+        name: clean-duplicate-chart
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      - command:
+        - /bin/sh
+        - -c
+        - cp -r /scripts/. /shared/
+        image: quay.io/devtron/hyperion:e17c52eb-280-25812
+        imagePullPolicy: IfNotPresent
+        name: init-devtron
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /shared
+          name: shared-volume
+      restartPolicy: OnFailure
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsUser: 1000
+      serviceAccount: devtron-default-sa
+      serviceAccountName: devtron-default-sa
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: shared-volume
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    release: devtron
+  name: dashboard-cm
+  namespace: devtroncd
+data:
+  API_BATCH_SIZE: "30"
+  APPLICATION_METRICS_ENABLED: "true"
+  ENABLE_BUILD_CONTEXT: "true"
+  ENABLE_CI_JOB: "true"
+  ENABLE_EXTERNAL_ARGO_CD: "true"
+  ENABLE_RESOURCE_SCAN: "true"
+  ENABLE_RESTART_WORKLOAD: "true"
+  ENABLE_SCOPED_VARIABLES: "true"
+  FEATURE_EXTERNAL_FLUX_CD_ENABLE: "true"
+  FEATURE_STEP_WISE_LOGS_ENABLE: "true"
+  FEATURE_USER_DEFINED_GITOPS_REPO_ENABLE: "true"
+  GA_ENABLED: "false"
+  GLOBAL_API_TIMEOUT: "60000"
+  HIDE_APPLICATION_GROUPS: "false"
+  HIDE_EXCLUDE_INCLUDE_GIT_COMMITS: "false"
+  HOTJAR_ENABLED: "false"
+  SENTRY_ENABLED: "false"
+  SENTRY_ENV: PRODUCTION
+  SERVICE_WORKER_TIMEOUT: "1"
+  TRIGGER_API_TIMEOUT: "60000"
+  USE_V2: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    release: devtron
+  name: devtron-cluster-components
+  namespace: devtroncd
+data:
+  rollout.yaml: |-
+    rollout:
+      resources:
+        limits:
+          cpu: 250m
+          memory: 200Mi
+        requests:
+          cpu: 50m
+          memory: 100Mi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    release: devtron
+  name: devtron-cm
+  namespace: devtroncd
+data:
+  APP_SYNC_IMAGE: quay.io/devtron/chart-sync:13ffae06-150-25515
+  DASHBOARD_HOST: dashboard-service.devtroncd
+  DASHBOARD_PORT: "80"
+  DEX_HOST: http://argocd-dex-server.devtroncd
+  DEX_PORT: "5556"
+  HELM_CLIENT_URL: kubelink-service:50051
+  PG_ADDR: postgresql-postgresql.devtroncd
+  PG_DATABASE: orchestrator
+  PG_PORT: "5432"
+  PG_USER: postgres
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    release: devtron
+  name: devtron-custom-cm
+  namespace: devtroncd
+data:
+  DEFAULT_CI_IMAGE: quay.io/devtron/ci-runner:fd5702db-138-25483
+  INSTALLED_MODULES: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devtron-ucid
+  namespace: devtroncd
+data:
+  UCID: yhkc40rj9rdwmf1y
+  installEvent: "2"
+  uiEventKey: "3"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: kubelink
+    release: devtron
+  name: kubelink-cm
+  namespace: devtroncd
+data:
+  ENABLE_HELM_RELEASE_CACHE: "true"
+  MANIFEST_FETCH_BATCH_SIZE: "2"
+  NATS_MSG_PROCESSING_BATCH_SIZE: "1"
+  NATS_SERVER_HOST: nats://devtron-nats.devtroncd:4222
+  PG_ADDR: postgresql-postgresql.devtroncd
+  PG_DATABASE: orchestrator
+  PG_LOG_QUERY: "true"
+  PG_PORT: "5432"
+  PG_USER: postgres
+  USE_CUSTOM_HTTP_TRANSPORT: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+  name: migrator-override-cm
+  namespace: devtroncd
+data:
+  override: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql-init-scripts
+  namespace: devtroncd
+data:
+  db_create.sql: |
+    create database casbin;
+    create database git_sensor;
+    create database lens;
+    create database clairv4
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-dex-server
+  namespace: devtroncd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devtron
+  namespace: devtroncd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devtron-default-sa
+  namespace: devtroncd
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: argocd-dex-server
+  namespace: devtroncd
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: argocd-dex-server
+  namespace: devtroncd
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: argocd-dex-server
+subjects:
+- kind: ServiceAccount
+  name: argocd-dex-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devtron
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- nonResourceURLs:
+  - '*'
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devtron
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devtron
+subjects:
+- kind: ServiceAccount
+  name: devtron
+  namespace: devtroncd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app.kubernetes.io/name: argocd-secret
+    app.kubernetes.io/part-of: argocd
+  name: argocd-secret
+  namespace: devtroncd
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    release: devtron
+  name: devtron-custom-secret
+  namespace: devtroncd
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    release: devtron
+  name: devtron-dashboard-secret
+  namespace: devtroncd
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    release: devtron
+  name: devtron-secret
+  namespace: devtroncd
+type: Opaque
+data:
+  PG_PASSWORD: M1JIcXRBbVJ4NVF6NTZaaVpiNmhNWHQ3OFV1UHlQV0I=
+  dex.config: ""
+  url: ""
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: kubelink
+    release: devtron
+  name: kubelink-secret
+  namespace: devtroncd
+type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-migrator
+  namespace: devtroncd
+type: Opaque
+data:
+  DB_PASSWORD: M1JIcXRBbVJ4NVF6NTZaaVpiNmhNWHQ3OFV1UHlQV0I=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app: postgresql
+    release: devtron
+  name: postgresql-postgresql
+  namespace: devtroncd
+type: Opaque
+data:
+  POSTGRES_DB: b3JjaGVzdHJhdG9y
+  POSTGRES_USER: cG9zdGdyZXM=
+  postgresql-password: M1JIcXRBbVJ4NVF6NTZaaVpiNmhNWHQ3OFV1UHlQV0I=
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+  name: argocd-cm
+  namespace: devtroncd
+data:
+  repositories: |-
+    - name: devtron
+      type: helm
+      url: https://helm.devtron.ai
+    - name: fluent
+      type: helm
+      url: https://fluent.github.io/helm-charts
+    - name: nginx-ingress
+      type: helm
+      url: https://kubernetes.github.io/ingress-nginx
+    - name: elastic
+      type: helm
+      url: https://helm.elastic.co
+    - name: bitnami
+      type: helm
+      url: https://charts.bitnami.com/bitnami
+    - name: prometheus-community
+      type: helm
+      url:  https://prometheus-community.github.io/helm-charts
+    - name: jetstack
+      type: helm
+      url:  https://charts.jetstack.io
+    - name: metrics-server
+      type: helm
+      url:  https://kubernetes-sigs.github.io/metrics-server
+    - name: autoscaler
+      type: helm
+      url:  https://kubernetes.github.io/autoscaler
+    - name: external-secrets
+      type: helm
+      url:  https://charts.external-secrets.io
+    - name: kedacore
+      type: helm
+      url:  https://kedacore.github.io/charts
+  resource.customizations: "kubernetes-client.io/ExternalSecret:\n  health.lua: |\n
+    \   hs = {}\n    if obj.status ~= nil then\n      if obj.status.status ~= nil
+    then\n          hs.status = \"Degraded\"\n          hs.message = obj.status.status\n
+    \     else\n        hs.status = \"Healthy\"\n      end\n    else\n      hs.status
+    = \"Healthy\"\n    end\n    return hs\nargoproj.io/Rollout:\n  health.lua: |\n
+    \   function checkReplicasStatus(obj)\n      hs = {}\n      replicasCount = getNumberValueOrDefault(obj.spec.replicas)\n
+    \     replicasStatus = getNumberValueOrDefault(obj.status.replicas)\n      updatedReplicas
+    = getNumberValueOrDefault(obj.status.updatedReplicas)\n      availableReplicas
+    = getNumberValueOrDefault(obj.status.availableReplicas)\n\n      if updatedReplicas
+    < replicasCount then\n        hs.status = \"Progressing\"\n        hs.message
+    = \"Waiting for roll out to finish: More replicas need to be updated\"\n        return
+    hs\n      end\n      -- Since the scale down delay can be very high, BlueGreen
+    does not wait for all the old replicas to scale\n      -- down before marking
+    itself healthy. As a result, only evaluate this condition if the strategy is canary.\n
+    \     if obj.spec.strategy.canary ~= nil and replicasStatus > updatedReplicas
+    then\n        hs.status = \"Progressing\"\n        hs.message = \"Waiting for
+    roll out to finish: old replicas are pending termination\"\n        return hs\n
+    \     end\n      if availableReplicas < updatedReplicas then\n        hs.status
+    = \"Progressing\"\n        hs.message = \"Waiting for roll out to finish: updated
+    replicas are still becoming available\"\n        return hs\n      end\n      return
+    nil\n    end\n\n    function getNumberValueOrDefault(field)\n      if field ~=
+    nil then\n        return field\n      end\n      return 0\n    end\n\n    function
+    checkPaused(obj)\n      hs = {}\n      local paused = false\n      if obj.status.verifyingPreview
+    ~= nil then\n        paused = obj.status.verifyingPreview\n      elseif obj.spec.paused
+    ~= nil then\n        paused = obj.spec.paused\n      end\n\n      if paused then\n
+    \       hs.status = \"Suspended\"\n        hs.message = \"Rollout is paused\"\n
+    \       return hs\n      end\n      return nil\n    end\n\n    hs = {}\n    if
+    obj.status ~= nil then\n      if obj.status.conditions ~= nil then\n        for
+    _, condition in ipairs(obj.status.conditions) do\n          if condition.type
+    == \"InvalidSpec\" then\n            hs.status = \"Degraded\"\n            hs.message
+    = condition.message\n            return hs\n          end\n          if condition.type
+    == \"Progressing\" and condition.reason == \"RolloutAborted\" then\n            hs.status
+    = \"Degraded\"\n            hs.message = condition.message\n            return
+    hs\n          end\n          if condition.type == \"Progressing\" and condition.reason
+    == \"ProgressDeadlineExceeded\" then\n            hs.status = \"Degraded\"\n            hs.message
+    = condition.message\n            return hs\n          end\n        end\n      end\n
+    \     if obj.status.currentPodHash ~= nil then\n        if obj.spec.strategy.blueGreen
+    ~= nil then\n          isPaused = checkPaused(obj)\n          if isPaused ~= nil
+    then\n            return isPaused\n          end\n          replicasHS = checkReplicasStatus(obj)\n
+    \         if replicasHS ~= nil then\n            return replicasHS\n          end\n
+    \         if obj.status.blueGreen ~= nil and obj.status.blueGreen.activeSelector
+    ~= nil and obj.status.blueGreen.activeSelector == obj.status.currentPodHash then\n
+    \           hs.status = \"Healthy\"\n            hs.message = \"The active Service
+    is serving traffic to the current pod spec\"\n            return hs\n          end\n
+    \         hs.status = \"Progressing\"\n          hs.message = \"The current pod
+    spec is not receiving traffic from the active service\"\n          return hs\n
+    \       end\n        if obj.spec.strategy.recreate ~= nil then\n          isPaused
+    = checkPaused(obj)\n          if isPaused ~= nil then\n            return isPaused\n
+    \         end\n          replicasHS = checkReplicasStatus(obj)\n          if replicasHS
+    ~= nil then\n            return replicasHS\n          end\n          if obj.status.recreate
+    ~= nil and obj.status.recreate.currentRS ~= nil and obj.status.recreate.currentRS
+    == obj.status.currentPodHash then\n            hs.status = \"Healthy\"\n            hs.message
+    = \"Rollout is successful\"\n            return hs\n          end\n          hs.status
+    = \"Progressing\"\n          hs.message = \"Rollout is in progress\"\n          return
+    hs\n        end\n        if obj.spec.strategy.canary ~= nil then\n          currentRSIsStable
+    = obj.status.canary.stableRS == obj.status.currentPodHash\n          if obj.spec.strategy.canary.steps
+    ~= nil and table.getn(obj.spec.strategy.canary.steps) > 0 then\n            stepCount
+    = table.getn(obj.spec.strategy.canary.steps)\n            if obj.status.currentStepIndex
+    ~= nil then\n              currentStepIndex = obj.status.currentStepIndex\n              isPaused
+    = checkPaused(obj)\n              if isPaused ~= nil then\n                return
+    isPaused\n              end\n          \n              if paused then\n                hs.status
+    = \"Suspended\"\n                hs.message = \"Rollout is paused\"\n                return
+    hs\n              end\n              if currentRSIsStable and stepCount == currentStepIndex
+    then\n                replicasHS = checkReplicasStatus(obj)\n                if
+    replicasHS ~= nil then\n                  return replicasHS\n                end\n
+    \               hs.status = \"Healthy\"\n                hs.message = \"The rollout
+    has completed all steps\"\n                return hs\n              end\n            end\n
+    \           hs.status = \"Progressing\"\n            hs.message = \"Waiting for
+    rollout to finish steps\"\n            return hs\n          end\n\n          --
+    The detecting the health of the Canary deployment when there are no steps\n          replicasHS
+    = checkReplicasStatus(obj)\n          if replicasHS ~= nil then\n            return
+    replicasHS\n          end\n          if currentRSIsStable then\n            hs.status
+    = \"Healthy\"\n            hs.message = \"The rollout has completed canary deployment\"\n
+    \           return hs\n          end\n          hs.status = \"Progressing\"\n
+    \         hs.message = \"Waiting for rollout to finish canary deployment\"\n        end\n
+    \     end\n    end\n    hs.status = \"Progressing\"\n    hs.message = \"Waiting
+    for rollout to finish: status has not been reconciled.\"\n    return hs\n"
+  timeout.hard.reconciliation: "0"
+  timeout.reconciliation: 60s
