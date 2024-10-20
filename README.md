@@ -79,6 +79,7 @@ echo y | argocd login 172.30.1.2:31080 --username admin --password $argopass
 echo y | argocd cluster add kind-kk --name snd
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/addon-appset.yaml
 wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/minio-appset.yaml
+wget -q https://raw.githubusercontent.com/cloudcafetech/k8sdemo/main/argocd-apps.yaml
 echo $argopass
 
 ```
